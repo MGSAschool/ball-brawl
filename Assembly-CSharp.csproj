@@ -55,7 +55,11 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\DeathZone.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
+    <Compile Include="Assets\Scripts\Interfaces\IKnockable.cs" />
+    <Compile Include="Assets\Scripts\KnockbackDealer.cs" />
+    <Compile Include="Assets\Scripts\Components\KnockbackComponent.cs" />
     <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
+    <Compile Include="Assets\Scripts\PowerUps\SuperKnockback.cs" />
     <Compile Include="Assets\Scripts\BrawlPlayer.cs" />
   </ItemGroup>
   <ItemGroup>

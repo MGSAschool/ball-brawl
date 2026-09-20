@@ -1,6 +1,7 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
-
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerController : MonoBehaviour
@@ -9,10 +10,11 @@ public class PlayerController : MonoBehaviour
     private enum States { idle, Move }
     private States currentState = States.idle;
     public Rigidbody rb;
-    private readonly float moveSpeed = 10f;
-    private readonly float maxSpeed = 13f;
-    private readonly float deceleration = 3f;
+    public readonly float moveSpeed = 10f;
+    public readonly float maxSpeed = 13f;
+    private readonly float deceleration = 0.5f;
     private Vector2 moveInput;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -21,24 +23,42 @@ public class PlayerController : MonoBehaviour
     {
     }
 
-    void FixedUpdate()
+    private void Update()
     {
-        Move();
+        switch (currentState)
+        {
+            case States.idle:
+                if (moveInput != Vector2.zero)
+                {
+                    currentState = States.Move;
+                }
+                break;
+
+            case States.Move:
+                if (moveInput == Vector2.zero)
+                {
+                    currentState = States.idle;
+                }
+                break;
+        }
     }
-    // Update is called once per frame
-    void Update()
+
+    private void FixedUpdate()
     {
+        switch (currentState)
+        {
+            case States.idle:
+                DecaySpeed();
+                break;
+
+            case States.Move:
+                Move();
+                break;
+        }
     }
     public void OnMove(InputValue value)
     {
         moveInput = value.Get<Vector2>();
-    }
-    void OnCollisionEnter(Collision collision)
-    {
-        if (collision.gameObject.CompareTag("Enemy"))
-        {
-            Debug.Log("Collided with Enemy");
-        }
     }
     private void Move()
     {
@@ -48,27 +68,18 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocity.y, 
             Mathf.Clamp(rb.linearVelocity.z, -maxSpeed, maxSpeed));
 
-        if(moveInput != Vector2.zero)
-        {
-            rb.AddForce(new Vector3(moveInput.x, 0, moveInput.y) * moveSpeed);
-        }
-        else
-        {
-            DecaySpeed();
-        }
-        
+        Vector3 direction = new Vector3(moveInput.x, 0, moveInput.y).normalized;
+        rb.AddForce(direction * moveSpeed);
     }
      private void DecaySpeed()
     {
         // If there is no input, gradually reduce the velocity to zero to simulate deceleration in physics
-         if (moveInput == Vector2.zero)
-    {
-        rb.linearVelocity = Vector3.Lerp(
-            rb.linearVelocity,
-            new Vector3(0, rb.linearVelocity.y, 0),
-            deceleration * Time.fixedDeltaTime
-        );
+         rb.linearVelocity = Vector3.Lerp(
+                rb.linearVelocity,
+                new Vector3(0, rb.linearVelocity.y, 0),
+                deceleration * Time.fixedDeltaTime
+            );
     }
 
-    }
+    
 }
