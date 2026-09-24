@@ -2,26 +2,27 @@ using UnityEngine;
 
 public class KnockbackDealer : MonoBehaviour
 {
-    public enum KnockbackType { Normal, Super }
-
-    public KnockbackType knockbackType = KnockbackType.Normal;
-    public float knockbackForce = 10f;
-
+    private float BaseKnockbackForce = 10f;
+    private PowerUpHandler powerUpHandler;
+    void Awake()
+    {
+        powerUpHandler = GetComponent<PowerUpHandler>();
+    }
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.TryGetComponent<IKnockable>(out var knockable))
+        if (collision.gameObject.TryGetComponent<IKnockable>(out var knockReceiver))
         {
             Vector3 knockbackDirection =
                 (collision.transform.position - transform.position).normalized;
 
-            float force = knockbackForce;
+            float force = BaseKnockbackForce;
 
-            if (knockbackType == KnockbackType.Super)
+            if(powerUpHandler.ActivePowerUp != null)
             {
-                force *= 2f;
-                knockbackType = KnockbackType.Normal;
+                force = powerUpHandler.ActivePowerUp.ModifyKnockback(force); // basically force * multiplier
             }
-            knockable.ApplyKnockback(knockbackDirection, force);
+            
+            knockReceiver.ApplyKnockback(knockbackDirection, force);
         }
     }
 }

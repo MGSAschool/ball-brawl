@@ -13,7 +13,7 @@ public class SuperKnockback : MonoBehaviour
 
     void Pickup(KnockbackDealer player)
     {
-        player.knockbackType = KnockbackDealer.KnockbackType.Super;
+        //player.knockbackType = KnockbackDealer.KnockbackType.Super;
     }
 }
     

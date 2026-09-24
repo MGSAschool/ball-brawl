@@ -1,21 +1,26 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-
 [RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(PlayerInput))]
+[RequireComponent(typeof(PowerUpHandler))]
+[RequireComponent(typeof(PlayerInputReader))]
 public class PlayerController : MonoBehaviour
 {
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    private enum States { idle, Move }
-    private States currentState = States.idle;
+    private enum States { Idle, Move }
+    private States currentState = States.Idle;
     public Rigidbody rb;
-    public readonly float moveSpeed = 10f;
-    public readonly float maxSpeed = 13f;
+    [SerializeField] public float moveSpeed = 10f;
+    [SerializeField] private float maxSpeed = 13f;
     private readonly float deceleration = 0.5f;
-    private Vector2 moveInput;
+    private PlayerInputReader playerInputReader;
+    private PowerUpHandler powerUpHandler;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        powerUpHandler = GetComponent<PowerUpHandler>();
+        playerInputReader = GetComponent<PlayerInputReader>();
     }
     void Start()
     {
@@ -23,51 +28,29 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        switch (currentState)
-        {
-            case States.idle:
-                if (moveInput != Vector2.zero)
-                {
-                    currentState = States.Move;
-                }
-                break;
-
-            case States.Move:
-                if (moveInput == Vector2.zero)
-                {
-                    currentState = States.idle;
-                }
-                break;
-        }
+        currentState = (playerInputReader.moveInput == Vector2.zero) ? States.Idle : States.Move;
     }
 
     private void FixedUpdate()
     {
+        Vector2 readInput = playerInputReader.moveInput;
         switch (currentState)
         {
-            case States.idle:
+            case States.Idle:
                 DecaySpeed();
                 break;
 
             case States.Move:
-                Move();
+                Move(readInput);
                 break;
         }
     }
-    public void OnMove(InputValue value)
+    private void Move(Vector2 moveInput)
     {
-        moveInput = value.Get<Vector2>();
-    }
-    private void Move()
-    {
-        // Clamp the velocity to the maximum speed
-        rb.linearVelocity = new Vector3(
-            Mathf.Clamp(rb.linearVelocity.x, -maxSpeed, maxSpeed), 
-            rb.linearVelocity.y, 
-            Mathf.Clamp(rb.linearVelocity.z, -maxSpeed, maxSpeed));
-
         Vector3 direction = new Vector3(moveInput.x, 0, moveInput.y).normalized;
-        rb.AddForce(direction * moveSpeed);
+        rb.AddForce(direction * GetModifiedSpeed(), ForceMode.Acceleration);
+        ClampHorizontalSpeed();
+        
     }
      private void DecaySpeed()
     {
@@ -79,5 +62,31 @@ public class PlayerController : MonoBehaviour
             );
     }
 
+    private void ClampHorizontalSpeed()
+    {
+        Vector3 horizontalVel = new Vector3(
+            rb.linearVelocity.x, 
+            0, 
+            rb.linearVelocity.z);
+
+        if(horizontalVel.magnitude > maxSpeed)
+        {
+            horizontalVel = horizontalVel.normalized * maxSpeed;
+            
+        }
+        rb.linearVelocity = new Vector3(
+            horizontalVel.x, 
+            rb.linearVelocity.y, 
+            horizontalVel.z);
+    }
+
+    private float GetModifiedSpeed()
+    {
+        if(powerUpHandler != null && powerUpHandler.ActivePowerUp is SpeedBoostPowerUp powerUp)
+        {
+           return powerUp.ModifySpeed(moveSpeed);
+        }
+        return moveSpeed;
+    }
     
 }
