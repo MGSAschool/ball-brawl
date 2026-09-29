@@ -6,8 +6,6 @@ public class PowerUpHandler : MonoBehaviour
     public PowerUpModifier ActivePowerUp { get; private set; }
 
     private Coroutine powerUpCoroutine;
-    public bool hasPowerUpActive = false;
-
     public void AddPowerUp(PowerUpModifier powerUp)
     {
         ActivePowerUp = powerUp;

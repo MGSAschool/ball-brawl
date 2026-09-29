@@ -17,6 +17,8 @@ GameObject:
   - component: {fileID: -2196365560044191165}
   - component: {fileID: 3960386447007007471}
   - component: {fileID: 7152823388834563762}
+  - component: {fileID: 1529324444781365983}
+  - component: {fileID: 6179020100597106137}
   m_Layer: 0
   m_Name: Player1
   m_TagString: Player
@@ -156,8 +158,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f7e27bc1a396c694ca37f2fc86af5c1b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KnockbackDealer
-  knockbackType: 0
-  knockbackForce: 10
 --- !u!114 &-2196365560044191165
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -183,6 +183,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   rb: {fileID: 8778749235708546831}
+  moveSpeed: 10
+  maxSpeed: 13
 --- !u!114 &7152823388834563762
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -233,3 +235,28 @@ MonoBehaviour:
   m_DefaultActionMap: Gameplay
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
+--- !u!114 &1529324444781365983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7922122273246251212}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fee7190a2966f5e4ea9dc9789e8da5b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PowerUpHandler
+  hasPowerUpActive: 0
+--- !u!114 &6179020100597106137
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7922122273246251212}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a788913130c99b8458c0319262a2572c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerInputReader

@@ -13,4 +13,6 @@ MonoBehaviour:
   m_Name: Super Knockback PowerUp
   m_EditorClassIdentifier: Assembly-CSharp::SuperKnockbackPowerUp
   duration: 5
+  weight: 50
+  powerupName: SuperKnockback
   multiplier: 2
