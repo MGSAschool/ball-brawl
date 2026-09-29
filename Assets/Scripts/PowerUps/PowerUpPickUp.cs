@@ -1,9 +1,8 @@
 using UnityEngine;
-
+using UnityEngine.Events;
 public class PowerUpPickUp : MonoBehaviour
 {
     private PowerUpModifier powerUp;
-
     public void SetupPowerUp(PowerUpModifier powerUp)
     {
         this.powerUp = powerUp;
@@ -12,8 +11,12 @@ public class PowerUpPickUp : MonoBehaviour
     {   
         if(other.CompareTag("Player"))
         {
+
             powerUp.ApplyModifier(other.gameObject);
             Destroy(gameObject);
+            
         }
     }
+
+
 }

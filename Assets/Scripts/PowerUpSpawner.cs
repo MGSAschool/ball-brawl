@@ -3,8 +3,6 @@ public class PowerUpSpawner : MonoBehaviour
 {
     [SerializeField] private PowerUpModifier[] powerUps;
     [SerializeField] private GameObject pickupPrefab;
-
-
     private PowerUpModifier GetWeightPowerUp()
     {
         float totalWeight = 0f;
@@ -36,7 +34,6 @@ public class PowerUpSpawner : MonoBehaviour
     private void Spawn()
     {
         PowerUpModifier selected = GetWeightPowerUp();
-        Debug.Log(selected.name);
         if(selected == null)
             return;
 
@@ -47,14 +44,5 @@ public class PowerUpSpawner : MonoBehaviour
         );
 
         pickup.GetComponent<PowerUpPickUp>().SetupPowerUp(selected);
-        
-    }
-
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            Spawn();
-        }
     }
 }

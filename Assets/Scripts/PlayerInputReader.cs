@@ -10,4 +10,6 @@ public class PlayerInputReader : MonoBehaviour
     {
         moveInput = value.Get<Vector2>();
     }
+
+    
 }
