@@ -53,9 +53,20 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.5.8f1\Editor\Data\BCLExtensions\TargetingPacks\netstandard2.1\analyzers\dotnet\roslyn4.0\cs\System.Text.Json.SourceGeneration.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\PowerUps\PowerUpModifier.cs" />
     <Compile Include="Assets\Scripts\DeathZone.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
+    <Compile Include="Assets\Scripts\PowerUps\SpeedBoostPowerUp.cs" />
+    <Compile Include="Assets\Scripts\Interfaces\IKnockable.cs" />
+    <Compile Include="Assets\Scripts\PowerUps\SuperKnockbackPowerUp.cs" />
+    <Compile Include="Assets\Scripts\PlayerInputReader.cs" />
+    <Compile Include="Assets\Scripts\KnockbackDealer.cs" />
+    <Compile Include="Assets\Scripts\PowerUps\PowerUpHandler.cs" />
+    <Compile Include="Assets\Scripts\PowerUpSpawner.cs" />
+    <Compile Include="Assets\Scripts\Components\KnockbackComponent.cs" />
     <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
+    <Compile Include="Assets\Scripts\PowerUps\SuperKnockback.cs" />
+    <Compile Include="Assets\Scripts\PowerUps\PowerUpPickUp.cs" />
     <Compile Include="Assets\Scripts\BrawlPlayer.cs" />
   </ItemGroup>
   <ItemGroup>
