@@ -67,5 +67,5 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "ball-brawl.slnx"
+    "dotnet.defaultSolution": "Ball Brawl.slnx"
 }
