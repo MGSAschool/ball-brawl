@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 3349406058894891124}
   - component: {fileID: 5180232530240264056}
   - component: {fileID: 4589879198016967285}
+  - component: {fileID: 1501401104386912382}
+  - component: {fileID: 5095515900124366293}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -122,9 +124,9 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6289414871106444190}
   serializedVersion: 5
-  m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
+  m_Mass: 1.5
+  m_LinearDamping: 1
+  m_AngularDamping: 0.5
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -160,3 +162,35 @@ MonoBehaviour:
   hasSuperKnockback: 0
   baseHitForce: 12
   superKnockbackMultiplier: 2.5
+--- !u!114 &1501401104386912382
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6289414871106444190}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a772f7680f5ebb345a62f557cde7941b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraFollowMouse
+  target: {fileID: 0}
+  offset: {x: 0, y: 6, z: -12}
+  mouseSensitivity: 3
+  minPitch: -15
+  maxPitch: 60
+  smoothSpeed: 10
+--- !u!114 &5095515900124366293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6289414871106444190}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ead2f897a88adcf49a553edcbb680e40, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
+  currentPowerUp: 0
+  useKey: 102

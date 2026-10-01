@@ -1,60 +1,62 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+
 public class PowerUpSpawner : MonoBehaviour
 {
-    [SerializeField] private PowerUpModifier[] powerUps;
-    [SerializeField] private GameObject pickupPrefab;
+    [Header("Prefabs to Spawn")]
+    [SerializeField] private GameObject[] powerUpPrefabs;
 
+    [Header("Spawn Settings")]
+    [SerializeField] private float spawnInterval = 5f;
+    [SerializeField] private int maxPowerUpsInArena = 6;
+    [SerializeField] private Transform arenaCenter;
+    [SerializeField] private float arenaRadius = 35f;
+    [SerializeField] private float spawnHeight = 1.2f;
 
-    private PowerUpModifier GetWeightPowerUp()
+    private readonly List<GameObject> activePowerUps = new List<GameObject>();
+
+    private void Start()
     {
-        float totalWeight = 0f;
-
-        foreach(var powerUp in powerUps)
-        {
-            if(powerUp != null)
-                totalWeight += powerUp.Weight;
-        }
-
-        if(totalWeight <= 0)
-            return null;
-
-        float random = Random.Range(0f, totalWeight);
-
-        foreach(var powerUp in powerUps)
-        {
-            if(powerUp == null)
-                continue;
-
-            random -= powerUp.Weight;
-
-            if(random <= 0)
-                return powerUp;
-        }
-        return null;
+        StartCoroutine(SpawnRoutine());
     }
 
-    private void Spawn()
+    private IEnumerator SpawnRoutine()
     {
-        PowerUpModifier selected = GetWeightPowerUp();
-        Debug.Log(selected.name);
-        if(selected == null)
-            return;
+        while (true)
+        {
+            // Clean up destroyed/collected items from tracking list
+            activePowerUps.RemoveAll(item => item == null);
 
-        GameObject pickup = Instantiate(
-            pickupPrefab, 
-            transform.position, 
-            Quaternion.identity
-        );
+            if (activePowerUps.Count < maxPowerUpsInArena && powerUpPrefabs.Length > 0)
+            {
+                SpawnRandomPowerUp();
+            }
 
-        pickup.GetComponent<PowerUpPickUp>().SetupPowerUp(selected);
-        
+            yield return new WaitForSeconds(spawnInterval);
+        }
     }
 
-    void Update()
+    private void SpawnRandomPowerUp()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            Spawn();
-        }
+        // Pick random power-up prefab
+        int index = Random.Range(0, powerUpPrefabs.Length);
+        GameObject chosenPrefab = powerUpPrefabs[index];
+        if (chosenPrefab == null) return;
+
+        // Calculate circular spawn point on arena floor
+        Vector2 randomCircle = Random.insideUnitCircle * arenaRadius;
+        Vector3 origin = arenaCenter != null ? arenaCenter.position : Vector3.zero;
+        Vector3 spawnPos = origin + new Vector3(randomCircle.x, spawnHeight, randomCircle.y);
+
+        GameObject spawned = Instantiate(chosenPrefab, spawnPos, Quaternion.identity);
+        activePowerUps.Add(spawned);
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.cyan;
+        Vector3 center = arenaCenter != null ? arenaCenter.position : transform.position;
+        Gizmos.DrawWireSphere(center, arenaRadius);
     }
 }

@@ -14,6 +14,10 @@ public class Bomb : MonoBehaviour
     [SerializeField] private Color triggeredColor = Color.red;
     [SerializeField] private GameObject explosionVFXPrefab;
 
+    [Header("Audio Settings")]
+    [SerializeField] private AudioClip explosionSFX;
+    [Range(0f, 1f)] [SerializeField] private float explosionVolume = 1f;
+
     private bool isTriggered = false;
     private BombaClutchMinigame gameManager;
 
@@ -78,6 +82,11 @@ public class Bomb : MonoBehaviour
     if (explosionVFXPrefab != null)
     {
         Instantiate(explosionVFXPrefab, transform.position, Quaternion.identity);
+    }
+
+    if (explosionSFX != null)
+    {
+        AudioSource.PlayClipAtPoint(explosionSFX, transform.position, explosionVolume);
     }
 
     Destroy(gameObject);
