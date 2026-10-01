@@ -30,7 +30,19 @@ public class BrawlPlayer : MonoBehaviour
         // WASD or Arrow Keys
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
-        moveInput = new Vector3(h, 0f, v).normalized;
+
+        // Make movement relative to camera look angle
+        Transform cam = Camera.main.transform;
+        Vector3 forward = cam.forward;
+        Vector3 right = cam.right;
+
+        // Flatten camera directions so player stays on the platform plane
+        forward.y = 0f;
+        right.y = 0f;
+        forward.Normalize();
+        right.Normalize();
+
+        moveInput = (forward * v + right * h).normalized;
 
         if (dashTimer > 0)
         {
