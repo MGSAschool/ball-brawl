@@ -1,8 +1,9 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody))]
-public class BrawlPlayer : MonoBehaviour
+public class BrawlPlayer : MonoBehaviour, IKnockable
 {
     [Header("Movement")]
     public float moveSpeed = 10f;
@@ -17,7 +18,8 @@ public class BrawlPlayer : MonoBehaviour
     public float superKnockbackMultiplier = 2.5f;
 
     private Rigidbody rb;
-    private Vector3 moveInput;
+    private Vector2 inputDirection;
+    private bool isKnockedBack = false;
 
     void Awake()
     {
@@ -25,78 +27,68 @@ public class BrawlPlayer : MonoBehaviour
         rb.freezeRotation = true;
     }
 
-    void Update()
+    public void OnMove(InputValue value)
     {
-        // WASD or Arrow Keys
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
+        inputDirection = value.Get<Vector2>();
+    }
 
-        // Make movement relative to camera look angle
-        Transform cam = Camera.main.transform;
-        Vector3 forward = cam.forward;
-        Vector3 right = cam.right;
-
-        // Flatten camera directions so player stays on the platform plane
-        forward.y = 0f;
-        right.y = 0f;
-        forward.Normalize();
-        right.Normalize();
-
-        moveInput = (forward * v + right * h).normalized;
-
-        if (dashTimer > 0)
-        {
-            dashTimer -= Time.deltaTime;
-        }
-
-        // Left Shift to Dash
-        if (Input.GetKeyDown(KeyCode.LeftShift) && dashTimer <= 0)
+    public void OnDash(InputValue value)
+    {
+        if (value.isPressed && dashTimer <= 0 && !isKnockedBack)
         {
             TriggerDash();
         }
+    }
 
-        // Q for Invulnerability
-        if (Input.GetKeyDown(KeyCode.Q) && !isInvulnerable)
+    void Update()
+    {
+        if (dashTimer > 0)
         {
-            StartCoroutine(InvulnerableRoutine(3f));
-        }
-
-        // E for Super Knockback
-        if (Input.GetKeyDown(KeyCode.E) && !hasSuperKnockback)
-        {
-            StartCoroutine(SuperKnockbackRoutine(4f));
+            dashTimer -= Time.deltaTime;
         }
     }
 
     void FixedUpdate()
     {
-        if (moveInput.sqrMagnitude > 0.01f)
+        // Prevent player movement loop from overriding external explosion impulse
+        if (isKnockedBack) return;
+
+        if (inputDirection.sqrMagnitude > 0.01f)
         {
-            Vector3 targetVel = moveInput * moveSpeed;
-            targetVel.y = rb.linearVelocity.y;
-            rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, targetVel, 0.25f);
+            Vector3 moveTarget = new Vector3(inputDirection.x, 0f, inputDirection.y) * moveSpeed;
+            moveTarget.y = rb.linearVelocity.y;
+            rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, moveTarget, 0.25f);
         }
     }
 
     private void TriggerDash()
     {
         dashTimer = dashCooldown;
-        Vector3 dir = moveInput != Vector3.zero ? moveInput : transform.forward;
+        Vector3 dir = new Vector3(inputDirection.x, 0f, inputDirection.y).normalized;
+        if (dir == Vector3.zero) dir = transform.forward;
         rb.AddForce(dir * dashForce, ForceMode.Impulse);
     }
 
-    private IEnumerator InvulnerableRoutine(float dur)
+    // --- IKnockable Implementation ---
+    public void ApplyKnockback(Vector3 direction, float force)
     {
-        isInvulnerable = true;
-        yield return new WaitForSeconds(dur);
-        isInvulnerable = false;
+        if (isInvulnerable) return;
+
+        // Reset existing velocity so knockback takes full effect
+        rb.linearVelocity = Vector3.zero;
+        rb.AddForce(direction * force, ForceMode.Impulse);
+
+        if (gameObject.activeInHierarchy)
+        {
+            StartCoroutine(KnockbackRoutine(0.35f));
+        }
     }
 
-    private IEnumerator SuperKnockbackRoutine(float dur)
+    private IEnumerator KnockbackRoutine(float duration)
     {
-        hasSuperKnockback = true;
-        yield return new WaitForSeconds(dur);
-        hasSuperKnockback = false;
+        isKnockedBack = true;
+        yield return new WaitForSeconds(duration);
+        isKnockedBack = false;
     }
 
     void OnCollisionEnter(Collision collision)
@@ -106,10 +98,10 @@ public class BrawlPlayer : MonoBehaviour
             if (otherPlayer.isInvulnerable) return;
 
             Vector3 launchDirection = (collision.transform.position - transform.position).normalized;
-            launchDirection.y = 0.4f; // Launch angle
+            launchDirection.y = 0.4f;
 
             float force = baseHitForce * (hasSuperKnockback ? superKnockbackMultiplier : 1f);
-            otherPlayer.GetComponent<Rigidbody>().AddForce(launchDirection * force, ForceMode.Impulse);
+            otherPlayer.ApplyKnockback(launchDirection.normalized, force);
         }
     }
 }

@@ -232,7 +232,7 @@ MonoBehaviour:
     m_ActionName: 'Gameplay/Ability 1[/Keyboard/e]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: Gamepad
-  m_DefaultActionMap: Gameplay
+  m_DefaultActionMap: 201ff1ff-0161-44e3-a4db-bd6c0a0808c5
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
 --- !u!114 &1529324444781365983
