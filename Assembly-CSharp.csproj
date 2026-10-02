@@ -60,6 +60,7 @@
     <Compile Include="Assets\Scripts\PowerUps\SpeedBoostPowerUp.cs" />
     <Compile Include="Assets\Scripts\Interfaces\IKnockable.cs" />
     <Compile Include="Assets\Scripts\PowerUps\SuperKnockbackPowerUp.cs" />
+    <Compile Include="Assets\Scripts\PlayerSpawnManager.cs" />
     <Compile Include="Assets\Scripts\PlayerInputReader.cs" />
     <Compile Include="Assets\Scripts\KnockbackDealer.cs" />
     <Compile Include="Assets\Scripts\Bomb.cs" />
