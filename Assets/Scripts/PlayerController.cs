@@ -1,5 +1,7 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(PlayerInput))]
 [RequireComponent(typeof(PowerUpHandler))]
@@ -10,34 +12,35 @@ public class PlayerController : MonoBehaviour
     private enum States { Idle, Move }
     private States currentState = States.Idle;
     public Rigidbody rb;
-    [SerializeField] public float moveSpeed = 10f;
+    [SerializeField] private float moveSpeed = 10f;
     [SerializeField] private float maxSpeed = 13f;
-    private readonly float deceleration = 0.5f;
+    [SerializeField] private float dashForce = 50f;
+    [SerializeField] private float dashTime = 0.3f;
+    private readonly float decelerationRate = 1f;
     private PlayerInputReader playerInputReader;
     private PowerUpHandler powerUpHandler;
-
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
         powerUpHandler = GetComponent<PowerUpHandler>();
         playerInputReader = GetComponent<PlayerInputReader>();
     }
-    void Start()
-    {
-    }
+    void OnEnable() => playerInputReader.DashPressed += OnDash;
+    void OnDisable() => playerInputReader.DashPressed -= OnDash;
 
     private void Update()
     {
         currentState = (playerInputReader.moveInput == Vector2.zero) ? States.Idle : States.Move;
-    }
 
+    }
+    
     private void FixedUpdate()
     {
         Vector2 readInput = playerInputReader.moveInput;
         switch (currentState)
         {
             case States.Idle:
-                DecaySpeed();
+                Decelerate();
                 break;
 
             case States.Move:
@@ -50,15 +53,14 @@ public class PlayerController : MonoBehaviour
         Vector3 direction = new Vector3(moveInput.x, 0, moveInput.y).normalized;
         rb.AddForce(direction * GetModifiedSpeed(), ForceMode.Acceleration);
         ClampHorizontalSpeed();
-        
     }
-     private void DecaySpeed()
+     private void Decelerate()
     {
         // If there is no input, gradually reduce the velocity to zero to simulate deceleration in physics
          rb.linearVelocity = Vector3.Lerp(
                 rb.linearVelocity,
                 new Vector3(0, rb.linearVelocity.y, 0),
-                deceleration * Time.fixedDeltaTime
+                decelerationRate * Time.fixedDeltaTime
             );
     }
 
@@ -84,9 +86,27 @@ public class PlayerController : MonoBehaviour
     {
         if(powerUpHandler != null && powerUpHandler.ActivePowerUp is SpeedBoostPowerUp powerUp)
         {
-           return powerUp.ModifySpeed(moveSpeed);
+           return powerUp.ModifyMultiplier(moveSpeed);
         }
         return moveSpeed;
     }
-    
+    private void OnDash()
+    {
+        if(rb.linearVelocity == Vector3.zero) return;
+        
+        if(powerUpHandler.ActivePowerUp != null && powerUpHandler.ActivePowerUp is DashPowerUp)
+        {
+            Vector3 direction = new Vector3(playerInputReader.moveInput.x, 0, playerInputReader.moveInput.y).normalized;
+            rb.AddForce(direction * dashForce, ForceMode.Force);
+            StartCoroutine(ResetVelocity());
+        }
+        
+    }
+    IEnumerator ResetVelocity()
+    {
+        yield return new WaitForSeconds(dashTime);
+        rb.linearVelocity = Vector3.zero;
+        powerUpHandler.EndPowerup();
+    }
+
 }

@@ -185,6 +185,8 @@ MonoBehaviour:
   rb: {fileID: 8778749235708546831}
   moveSpeed: 10
   maxSpeed: 13
+  dashForce: 50
+  dashTime: 0.2
 --- !u!114 &7152823388834563762
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -247,7 +249,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fee7190a2966f5e4ea9dc9789e8da5b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PowerUpHandler
-  hasPowerUpActive: 0
 --- !u!114 &6179020100597106137
 MonoBehaviour:
   m_ObjectHideFlags: 0

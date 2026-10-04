@@ -17,9 +17,9 @@ public class KnockbackDealer : MonoBehaviour
 
             float force = BaseKnockbackForce;
 
-            if(powerUpHandler.ActivePowerUp != null)
+            if(powerUpHandler.ActivePowerUp != null && powerUpHandler.ActivePowerUp is SuperKnockbackPowerUp)
             {
-                force = powerUpHandler.ActivePowerUp.ModifyKnockback(force); // basically force * multiplier
+                force = powerUpHandler.ActivePowerUp.ModifyMultiplier(force); // basically force * multiplier
             }
             
             knockReceiver.ApplyKnockback(knockbackDirection, force);

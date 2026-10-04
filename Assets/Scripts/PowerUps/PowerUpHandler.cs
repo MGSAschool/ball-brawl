@@ -6,9 +6,19 @@ public class PowerUpHandler : MonoBehaviour
     public PowerUpModifier ActivePowerUp { get; private set; }
 
     private Coroutine powerUpCoroutine;
+
+ 
     public void AddPowerUp(PowerUpModifier powerUp)
     {
-        ActivePowerUp = powerUp;
+    
+        if(ActivePowerUp != null)
+        {
+            ActivePowerUp = null;
+            powerUpCoroutine = null;
+            ActivePowerUp = powerUp;
+        }else
+            ActivePowerUp = powerUp;
+
         if (powerUpCoroutine != null)
         {
             StopCoroutine(powerUpCoroutine);
@@ -29,5 +39,18 @@ public class PowerUpHandler : MonoBehaviour
         }
 
         powerUpCoroutine = null;
+    }
+    public bool IsInvulnerable()
+    {
+        return ActivePowerUp is InvulnerablePowerUp;
+    }
+
+    public void EndPowerup()
+    {
+        if(ActivePowerUp != null)
+        {
+            ActivePowerUp = null;
+            powerUpCoroutine = null;
+        }
     }
 }
