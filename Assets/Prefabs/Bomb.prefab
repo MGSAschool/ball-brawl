@@ -126,11 +126,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bomb
   fuseTime: 0
-  explosionRadius: 4
-  explosionForce: 7
+  explosionRadius: 8
+  explosionForce: 40
   scoreValue: 100
   bombRenderer: {fileID: 0}
   triggeredColor: {r: 1, g: 0.93701136, b: 0, a: 1}
   explosionVFXPrefab: {fileID: 0}
   explosionSFX: {fileID: 8300000, guid: e95ac1c99a6e43f4dbfc9800e37dc88e, type: 3}
-  explosionVolume: 0.491
+  explosionVolume: 1

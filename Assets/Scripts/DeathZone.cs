@@ -7,12 +7,17 @@ public class DeathZone : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.TryGetComponent<BrawlPlayer>(out var player))
-        {
-            StartCoroutine(RespawnRoutine(player));
-        }
-    }
+        BrawlPlayer player = other.GetComponentInParent<BrawlPlayer>();
+        if (player == null) return;
 
+        BombaClutchMinigame minigame = Object.FindAnyObjectByType<BombaClutchMinigame>();
+        if (minigame != null)
+        {
+            minigame.PlayerFell(player);
+        }
+
+        StartCoroutine(RespawnRoutine(player));
+    }
     private IEnumerator RespawnRoutine(BrawlPlayer player)
     {
         Rigidbody rb = player.GetComponent<Rigidbody>();
