@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 79cb1ec23ddeea949afe9cfabb96470c, type: 3}
   m_Name: Speed Boost Low
   m_EditorClassIdentifier: Assembly-CSharp::SpeedBoostPowerUp
-  duration: 5
+  duration: 15
   weight: 50
-  multiplier: 1.5
+  multiplier: 2

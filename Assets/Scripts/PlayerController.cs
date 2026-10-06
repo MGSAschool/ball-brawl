@@ -19,6 +19,7 @@ public class PlayerController : MonoBehaviour
     private readonly float decelerationRate = 1f;
     private PlayerInputReader playerInputReader;
     private PowerUpHandler powerUpHandler;
+    public bool IsAlive {get; private set;} = true;
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -96,17 +97,31 @@ public class PlayerController : MonoBehaviour
         
         if(powerUpHandler.ActivePowerUp != null && powerUpHandler.ActivePowerUp is DashPowerUp)
         {
-            Vector3 direction = new Vector3(playerInputReader.moveInput.x, 0, playerInputReader.moveInput.y).normalized;
-            rb.AddForce(direction * dashForce, ForceMode.Force);
-            StartCoroutine(ResetVelocity());
+            StartCoroutine(Dash());
         }
         
     }
-    IEnumerator ResetVelocity()
+    IEnumerator Dash()
     {
-        yield return new WaitForSeconds(dashTime);
+        float startTime = Time.time;
+        Vector3 direction = new Vector3(playerInputReader.moveInput.x, 0, playerInputReader.moveInput.y).normalized;
+        while(Time.time < startTime + dashTime)
+        {
+            rb.AddForce(direction * dashForce, ForceMode.Force);
+            yield return null;
+        }
         rb.linearVelocity = Vector3.zero;
         powerUpHandler.EndPowerup();
     }
+
+
+    public void Eliminated()
+    {
+        Debug.Log(this.name+" Eliminated");
+        IsAlive = false;
+    }
+
+
+
 
 }

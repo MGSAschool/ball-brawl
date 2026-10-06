@@ -1,9 +1,12 @@
+using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 public class PlayerInputManager : MonoBehaviour
 {
     [SerializeField] private GameObject playerPrefab;
     [SerializeField] private Transform[] spawnPoints;
+    private List<PlayerInput> players = new List<PlayerInput>();
     bool wasdJoined = false;
     bool arrowsJoined = false;
     bool gamePadJoined = false;
@@ -19,6 +22,7 @@ public class PlayerInputManager : MonoBehaviour
         }
         
         JoinGamepad();
+        CheckWinner();
     }
     private void JoinWASD()
     {
@@ -34,8 +38,10 @@ public class PlayerInputManager : MonoBehaviour
                 player.transform.position = spawnPoints[playerJoinedIndex].position;
             }
 
+            players.Add(player);
             wasdJoined = true;
             playerJoinedIndex ++;
+            player.name = $"Player {playerJoinedIndex}";
         }
     }
 
@@ -53,8 +59,10 @@ public class PlayerInputManager : MonoBehaviour
                 player.transform.position = spawnPoints[playerJoinedIndex].position;
             }
 
+            players.Add(player);
             arrowsJoined = true;
             playerJoinedIndex ++;
+            player.name = $"Player {playerJoinedIndex}";
         }
     }
 
@@ -75,11 +83,34 @@ public class PlayerInputManager : MonoBehaviour
                         player.transform.position = spawnPoints[playerJoinedIndex].position;
                     }
 
+                    players.Add(player);
                     gamePadJoined = true;
                     playerJoinedIndex ++;
+                    player.name = $"Player {playerJoinedIndex}";
                     break;
                 }
             }
+        }
+    }
+
+    private void CheckWinner()
+    {
+        PlayerController player = null;
+        int aliveCount = 0;
+
+        foreach(PlayerInput p in players)
+        {
+            PlayerController playerController = p.GetComponent<PlayerController>();
+
+            if (playerController.IsAlive)
+            {
+                aliveCount ++;
+                player = playerController;
+            }
+        }
+        if(aliveCount == 1 && players.Count > 1)
+        {
+            Debug.Log(player.name + " Wins!");
         }
     }
 }

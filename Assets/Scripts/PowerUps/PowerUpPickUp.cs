@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class PowerUpPickUp : MonoBehaviour
 {
-    [SerializeField] private PowerUpModifier powerUp;
+    private PowerUpModifier powerUp;
     [SerializeField] private float rotationSpeed = 90f;
 
     public void SetupPowerUp(PowerUpModifier powerUp)
@@ -25,6 +25,7 @@ public class PowerUpPickUp : MonoBehaviour
             if (powerUp != null)
             {
                 powerUp.ApplyModifier(other.gameObject);
+                Debug.Log(powerUp.name);
             }
 
             Destroy(gameObject);

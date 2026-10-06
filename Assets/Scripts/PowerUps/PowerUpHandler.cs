@@ -37,7 +37,6 @@ public class PowerUpHandler : MonoBehaviour
         {
             ActivePowerUp = null;
         }
-
         powerUpCoroutine = null;
     }
     public bool IsInvulnerable()
