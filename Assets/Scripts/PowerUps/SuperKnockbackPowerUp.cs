@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections;
 
 [CreateAssetMenu(
     fileName = "Super Knockback PowerUp",
@@ -16,7 +15,7 @@ public class SuperKnockbackPowerUp: PowerUpModifier
         }        
     }
 
-    public override float ModifyKnockback(float value)
+    public override float ModifyMultiplier(float value)
     {
         return value * multiplier;
     }
