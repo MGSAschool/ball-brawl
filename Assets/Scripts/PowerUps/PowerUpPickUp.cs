@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class PowerUpPickUp : MonoBehaviour
 {
-    private PowerUpModifier powerUp;
+    public PowerUpModifier powerUp;
     [SerializeField] private float rotationSpeed = 90f;
 
     public void SetupPowerUp(PowerUpModifier powerUp)

@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class EnemyScript : MonoBehaviour
@@ -12,7 +13,7 @@ public class EnemyScript : MonoBehaviour
     {
         Vector3 followDir = (other.transform.position - transform.position).normalized;
 
-        if (other.CompareTag("Player") && other.transform.position.magnitude > 0.1f)
+        if (other.CompareTag("Player"))
         {
             
             rb.AddForce(followDir * moveSpeed, ForceMode.Acceleration);
@@ -22,7 +23,13 @@ public class EnemyScript : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            rb.AddForce(-rb.linearVelocity, ForceMode.VelocityChange);
+            StartCoroutine(Idle());
         }
+    }
+
+    IEnumerator Idle()
+    {
+        yield return new WaitForSeconds(2.0f);
+        rb.linearVelocity = Vector3.zero;
     }
 }

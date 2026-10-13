@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using UnityEngine;
 public abstract class PowerUpModifier : ScriptableObject
 {
@@ -11,6 +10,6 @@ public abstract class PowerUpModifier : ScriptableObject
     public virtual float ModifyMultiplier(float value)
     {
         return value;
-        
     } 
+    public virtual void RemoveModifier(GameObject target){}
 }
