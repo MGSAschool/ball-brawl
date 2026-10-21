@@ -1,5 +1,5 @@
+using Unity.VisualScripting;
 using UnityEngine;
-
 public class KnockbackComponent : MonoBehaviour, IKnockable
 {
     private Rigidbody rb;
@@ -9,7 +9,7 @@ public class KnockbackComponent : MonoBehaviour, IKnockable
     }
     public void ApplyKnockback(Vector3 knockbackDirection, float knockbackForce)
     {
-        if (rb != null)
+        if (rb != null )
         {
             rb.AddForce(knockbackDirection * knockbackForce, ForceMode.Impulse);
         }

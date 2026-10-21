@@ -14,8 +14,7 @@ public class SpeedBoostPowerUp: PowerUpModifier
             handler.AddPowerUp(this);
         } 
     }
-
-    public float ModifySpeed(float value)
+    public override float ModifyMultiplier(float value)
     {
         return value * Multiplier;
     }

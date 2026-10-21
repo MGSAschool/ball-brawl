@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class KnockbackDealer : MonoBehaviour
 {
-    private float BaseKnockbackForce = 10f;
+    [SerializeField] private float BaseKnockbackForce = 10f;
     private PowerUpHandler powerUpHandler;
     void Awake()
     {
@@ -10,6 +10,8 @@ public class KnockbackDealer : MonoBehaviour
     }
     private void OnCollisionEnter(Collision collision)
     {
+        
+
         if (collision.gameObject.TryGetComponent<IKnockable>(out var knockReceiver))
         {
             Vector3 knockbackDirection =
@@ -17,9 +19,12 @@ public class KnockbackDealer : MonoBehaviour
 
             float force = BaseKnockbackForce;
 
-            if(powerUpHandler.ActivePowerUp != null)
+            if(powerUpHandler != null && powerUpHandler.ActivePowerUp is SuperKnockbackPowerUp)
             {
-                force = powerUpHandler.ActivePowerUp.ModifyKnockback(force); // basically force * multiplier
+                if(collision.gameObject.TryGetComponent<PowerUpHandler>(out var handler) &&
+                    handler.IsInvulnerable()) return;
+
+                force = powerUpHandler.ActivePowerUp.ModifyMultiplier(force); // basically force * multiplier
             }
             
             knockReceiver.ApplyKnockback(knockbackDirection, force);
