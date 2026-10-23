@@ -382,6 +382,7 @@ MonoBehaviour:
   maxDistance: 70
   zoomPerUnitSpread: 1.1
   smoothTime: 0.4
+  referenceAspect: 1.7777778
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -540,7 +541,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MatchHUD
   match: {fileID: 987355195}
+  coinRush: {fileID: 1333357110}
   announcementDuration: 2.5
+  referenceResolution: {x: 1920, y: 1080}
 --- !u!114 &987355195
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -602,6 +605,7 @@ GameObject:
   - component: {fileID: 1034040391}
   - component: {fileID: 1034040390}
   - component: {fileID: 1034040389}
+  - component: {fileID: 1034040393}
   m_Layer: 0
   m_Name: Arena
   m_TagString: Untagged
@@ -703,6 +707,33 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1034040393
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034040388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b34f81fc09b74f448883c4c2a1cee3b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FallingPlatforms
+  safeRadius: 16
+  ringCount: 3
+  targetSectionLength: 14
+  sectionGap: 0.08
+  thickness: 1
+  fallInterval: {x: 5, y: 9}
+  firstFallDelay: 10
+  maxDownAtOnce: 3
+  warningDuration: 2
+  fallDuration: 1.2
+  goneDuration: 8
+  riseDuration: 1.5
+  fallDistance: 25
+  warningColor: {r: 1, g: 0.25, b: 0.15, a: 1}
+  match: {fileID: 987355195}
 --- !u!1 &1067027647
 GameObject:
   m_ObjectHideFlags: 0
@@ -764,6 +795,62 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1888617119}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1333357109
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1333357111}
+  - component: {fileID: 1333357110}
+  m_Layer: 0
+  m_Name: CoinRush
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1333357110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1333357109}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca80aa649351e114681dde2f62114089, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CoinRush
+  match: {fileID: 987355195}
+  platforms: {fileID: 1034040393}
+  coinPrefab: {fileID: 5475976740581906637, guid: 3395cf2a478253541ba76c644e3f6ba7, type: 3}
+  firstRushDelay: 30
+  rushInterval: {x: 35, y: 50}
+  rushDuration: 10
+  minMatchTimeLeft: 8
+  coinsPerRush: 15
+  minSpawnRadius: 18
+  heightAboveFloor: 1.2
+  arenaCenter: {fileID: 1034040392}
+  fallbackRadius: 45
+--- !u!4 &1333357111
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1333357109}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1857287264
 GameObject:
@@ -909,3 +996,4 @@ SceneRoots:
   - {fileID: 1888617119}
   - {fileID: 24372774}
   - {fileID: 987355196}
+  - {fileID: 1333357111}
