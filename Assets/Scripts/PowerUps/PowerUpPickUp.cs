@@ -20,6 +20,17 @@ public class PowerUpPickUp : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        // Brawl players store the power-up in their inventory slots; stays in the arena if both are full
+        PlayerInventory inventory = other.GetComponentInParent<PlayerInventory>();
+        if (inventory != null)
+        {
+            if (inventory.TryCollect(powerUp))
+            {
+                Destroy(gameObject);
+            }
+            return;
+        }
+
         // Check for tag OR BrawlPlayer script
         if (other.CompareTag("Player") || other.GetComponentInParent<BrawlPlayer>() != null)
         {

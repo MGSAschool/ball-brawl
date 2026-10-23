@@ -1,82 +1,111 @@
-using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
-public enum PowerUpType
-{
-    None,
-    SpeedBoost,
-    SuperKnockback,
-    Invulnerability
-}
-
+// Two-slot power-up storage. Each stored power-up is fired by its own key:
+// Dash (LShift), Invulnerability (Q), Super Knockback (E). Each lasts its asset's Duration.
+// Speed boosts have no key, so they apply the moment they're picked up.
+[RequireComponent(typeof(BrawlPlayer))]
 public class PlayerInventory : MonoBehaviour
 {
-    [Header("Current Stored Power-Up")]
-    [SerializeField] private PowerUpType currentPowerUp = PowerUpType.None;
-    [SerializeField] private KeyCode useKey = KeyCode.F;
+    public const int SlotCount = 2;
+
+    [Header("Current Stored Power-Ups")]
+    [SerializeField] private PowerUpModifier[] slots = new PowerUpModifier[SlotCount];
 
     private BrawlPlayer player;
 
     private void Awake()
     {
         player = GetComponent<BrawlPlayer>();
-    }
-
-    private void Update()
-    {
-        if (Input.GetKeyDown(useKey) && currentPowerUp != PowerUpType.None)
+        if (slots == null || slots.Length != SlotCount)
         {
-            UsePowerUp();
+            slots = new PowerUpModifier[SlotCount];
         }
     }
 
-    public bool StorePowerUp(PowerUpType type)
-    {
-        // Prevent pickup if already holding one
-        if (currentPowerUp != PowerUpType.None) return false;
+    public PowerUpModifier GetSlot(int index) => slots[index];
 
-        currentPowerUp = type;
-        Debug.Log($"Collected: {type}. Press {useKey} to activate!");
-        return true;
-    }
-
-    private void UsePowerUp()
+    public bool TryCollect(PowerUpModifier powerUp)
     {
-        switch (currentPowerUp)
+        if (powerUp == null) return false;
+
+        if (powerUp is SpeedBoostPowerUp)
         {
-            case PowerUpType.SpeedBoost:
-                StartCoroutine(SpeedBoostRoutine(5f, 1.8f));
-                break;
-            case PowerUpType.SuperKnockback:
-                StartCoroutine(SuperKnockbackRoutine(5f));
-                break;
-            case PowerUpType.Invulnerability:
-                StartCoroutine(InvulnerabilityRoutine(4f));
-                break;
+            player.GrantSpeedBoost(powerUp.ModifyMultiplier(1f), powerUp.Duration);
+            return true;
         }
 
-        currentPowerUp = PowerUpType.None;
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i] == null)
+            {
+                slots[i] = powerUp;
+                return true;
+            }
+        }
+
+        // Both slots full: leave the pickup in the arena
+        return false;
     }
 
-    private IEnumerator SpeedBoostRoutine(float duration, float multiplier)
+    public void Clear()
     {
-        float originalSpeed = player.moveSpeed;
-        player.moveSpeed *= multiplier;
-        yield return new WaitForSeconds(duration);
-        player.moveSpeed = originalSpeed;
+        for (int i = 0; i < slots.Length; i++)
+        {
+            slots[i] = null;
+        }
     }
 
-    private IEnumerator SuperKnockbackRoutine(float duration)
+    // --- PlayerInput (Send Messages) callbacks ---
+    public void OnDash(InputValue value)
     {
-        player.hasSuperKnockback = true;
-        yield return new WaitForSeconds(duration);
-        player.hasSuperKnockback = false;
+        if (!value.isPressed) return;
+
+        // While a Dash power-up is running, the key dashes freely (cooldown permitting)
+        if (player.HasDash) player.Dash();
+        else TryUse<DashPowerUp>();
     }
 
-    private IEnumerator InvulnerabilityRoutine(float duration)
+    public void OnInvulnerability(InputValue value)
     {
-        player.isInvulnerable = true;
-        yield return new WaitForSeconds(duration);
-        player.isInvulnerable = false;
+        if (value.isPressed) TryUse<InvulnerablePowerUp>();
+    }
+
+    public void OnSuperKnockback(InputValue value)
+    {
+        if (value.isPressed) TryUse<SuperKnockbackPowerUp>();
+    }
+
+    private void TryUse<T>() where T : PowerUpModifier
+    {
+        if (!player.ControlsEnabled) return;
+
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i] is T powerUp && Activate(powerUp))
+            {
+                slots[i] = null;
+                return;
+            }
+        }
+    }
+
+    private bool Activate(PowerUpModifier powerUp)
+    {
+        switch (powerUp)
+        {
+            case DashPowerUp:
+                player.GrantDash(powerUp.Duration);
+                player.Dash();
+                return true;
+            case InvulnerablePowerUp:
+                player.GrantInvulnerability(powerUp.Duration);
+                return true;
+            case SuperKnockbackPowerUp:
+                player.GrantSuperKnockback(powerUp.ModifyMultiplier(1f), powerUp.Duration);
+                return true;
+            default:
+                return false;
+        }
     }
 }

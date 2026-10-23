@@ -16,12 +16,19 @@ public class DeathZone : MonoBehaviour
             minigame.PlayerFell(player);
         }
 
+        // In the main arena the match handles scoring and respawning
+        if (MatchManager.Instance != null)
+        {
+            MatchManager.Instance.HandlePlayerFell(player);
+            return;
+        }
+
         StartCoroutine(RespawnRoutine(player));
     }
     private IEnumerator RespawnRoutine(BrawlPlayer player)
     {
         Rigidbody rb = player.GetComponent<Rigidbody>();
-        
+
         // Freeze and hide player during delay
         rb.linearVelocity = Vector3.zero;
         rb.isKinematic = true;
