@@ -21,9 +21,30 @@ public class PowerUpSpawner : MonoBehaviour
 
     private readonly List<GameObject> activePowerUps = new List<GameObject>();
 
-    private void Start()
+    private Coroutine spawnRoutine;
+
+    // Enable/disable the component to start/stop spawning (MatchManager only spawns during a match)
+    private void OnEnable()
     {
-        StartCoroutine(SpawnRoutine());
+        spawnRoutine = StartCoroutine(SpawnRoutine());
+    }
+
+    private void OnDisable()
+    {
+        if (spawnRoutine != null)
+        {
+            StopCoroutine(spawnRoutine);
+            spawnRoutine = null;
+        }
+    }
+
+    public void ClearSpawned()
+    {
+        foreach (var item in activePowerUps)
+        {
+            if (item != null) Destroy(item);
+        }
+        activePowerUps.Clear();
     }
 
     private IEnumerator SpawnRoutine()
