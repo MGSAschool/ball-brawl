@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 7152823388834563762}
   - component: {fileID: 1529324444781365983}
   - component: {fileID: 6179020100597106137}
+  - component: {fileID: 2554663106860438469}
   m_Layer: 0
   m_Name: Player1
   m_TagString: Player
@@ -158,6 +159,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f7e27bc1a396c694ca37f2fc86af5c1b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KnockbackDealer
+  BaseKnockbackForce: 10
 --- !u!114 &-2196365560044191165
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -185,8 +187,8 @@ MonoBehaviour:
   rb: {fileID: 8778749235708546831}
   moveSpeed: 10
   maxSpeed: 13
-  dashForce: 50
-  dashTime: 0.2
+  dashForce: 200
+  dashTime: 0.4
 --- !u!114 &7152823388834563762
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -261,3 +263,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a788913130c99b8458c0319262a2572c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInputReader
+--- !u!114 &2554663106860438469
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7922122273246251212}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8bced6e6eb397ec4eacddc64a78a6a91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PowerupInventory
+  maxCapacity: 2
+  powerupInventory: []

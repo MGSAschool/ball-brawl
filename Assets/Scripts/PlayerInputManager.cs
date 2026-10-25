@@ -6,6 +6,7 @@ public class PlayerInputManager : MonoBehaviour
 {
     [SerializeField] private GameObject playerPrefab;
     [SerializeField] private Transform[] spawnPoints;
+    [SerializeField] private GameObject HUDPrefab;
     private List<PlayerInput> players = new List<PlayerInput>();
     bool wasdJoined = false;
     bool arrowsJoined = false;
@@ -41,6 +42,7 @@ public class PlayerInputManager : MonoBehaviour
             players.Add(player);
             wasdJoined = true;
             playerJoinedIndex ++;
+            CreateHUD(player);
             player.name = $"Player {playerJoinedIndex}";
         }
     }
@@ -62,6 +64,7 @@ public class PlayerInputManager : MonoBehaviour
             players.Add(player);
             arrowsJoined = true;
             playerJoinedIndex ++;
+            CreateHUD(player);
             player.name = $"Player {playerJoinedIndex}";
         }
     }
@@ -86,6 +89,7 @@ public class PlayerInputManager : MonoBehaviour
                     players.Add(player);
                     gamePadJoined = true;
                     playerJoinedIndex ++;
+                    CreateHUD(player);
                     player.name = $"Player {playerJoinedIndex}";
                     break;
                 }
@@ -112,6 +116,17 @@ public class PlayerInputManager : MonoBehaviour
         {
             Debug.Log(player.name + " Wins!");
         }
+    }
+    private void CreateHUD(PlayerInput player)
+    {
+        Canvas canvas = FindAnyObjectByType<Canvas>();
+        GameObject hud = Instantiate(HUDPrefab, canvas.transform, false);
+        
+        PowerupInventory inventory = player.GetComponent<PowerupInventory>();
+
+        PowerupInventoryUI inventoryUI = hud.GetComponent<PowerupInventoryUI>();
+
+        inventoryUI.Initialize(playerJoinedIndex, inventory);
     }
 }
     

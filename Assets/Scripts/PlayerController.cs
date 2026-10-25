@@ -1,7 +1,9 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
+
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(PlayerInput))]
 [RequireComponent(typeof(PowerUpHandler))]
@@ -26,8 +28,8 @@ public class PlayerController : MonoBehaviour
         powerUpHandler = GetComponent<PowerUpHandler>();
         playerInputReader = GetComponent<PlayerInputReader>();
     }
-    void OnEnable() => playerInputReader.DashPressed += OnDash;
-    void OnDisable() => playerInputReader.DashPressed -= OnDash;
+    // void OnEnable() => playerInputReader.DashPressed += OnDash;
+    // void OnDisable() => playerInputReader.DashPressed -= OnDash;
 
     private void Update()
     {
@@ -91,11 +93,11 @@ public class PlayerController : MonoBehaviour
         }
         return moveSpeed;
     }
-    private void OnDash()
+    public void OnDash()
     {
         if(rb.linearVelocity == Vector3.zero) return;
         
-        if(powerUpHandler.ActivePowerUp != null && powerUpHandler.ActivePowerUp is DashPowerUp)
+        if(powerUpHandler.ActivePowerUp is DashPowerUp)
         {
             StartCoroutine(Dash());
         }
@@ -120,8 +122,4 @@ public class PlayerController : MonoBehaviour
         Debug.Log(this.name+" Eliminated");
         IsAlive = false;
     }
-
-
-
-
 }
