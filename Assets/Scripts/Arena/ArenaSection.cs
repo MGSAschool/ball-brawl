@@ -1,15 +1,22 @@
 using UnityEngine;
 
 // One piece of the segmented arena floor. When triggered it shakes and flashes as a
-// warning, drops into the void, stays gone for a while, then rises back into place.
+// warning, drops into the void, stays gone for a while, then rises back into place
+// (or stays gone for good when StayDown is set). Separately, a solid section can freeze:
+// it flashes icy blue as a warning, turns to slippery ice for a while, then thaws.
 [RequireComponent(typeof(MeshRenderer), typeof(MeshCollider), typeof(Rigidbody))]
 public class ArenaSection : MonoBehaviour
 {
     public enum SectionState { Solid, Warning, Falling, Gone, Rising }
+    public enum FreezeState { None, Warning, Frozen }
 
     public SectionState State { get; private set; } = SectionState.Solid;
     public bool CanFall { get; set; } = true;
+    // While set, a section that is gone never rises back
+    public bool StayDown { get; set; }
     public bool IsSolid => State == SectionState.Solid;
+    public FreezeState Freeze { get; private set; } = FreezeState.None;
+    public bool IsFrozen => Freeze == FreezeState.Frozen;
 
     // Polar footprint relative to the arena center, used to pick points on this section
     public float InnerRadius { get; private set; }
@@ -19,6 +26,8 @@ public class ArenaSection : MonoBehaviour
 
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     private const float ShakeAmplitude = 0.08f;
+    // Frozen floor flickers for this long before it thaws
+    private const float ThawWarning = 1f;
 
     private Rigidbody rb;
     private MeshRenderer rend;
@@ -29,6 +38,9 @@ public class ArenaSection : MonoBehaviour
     private Color warningColor;
     private float stateStart;
     private float warningDuration, fallDuration, goneDuration, riseDuration, fallDistance;
+    private float freezeStart, freezeWarningDuration, frozenDuration;
+    private Color iceColor;
+    private PhysicsMaterial normalMaterial, iceMaterial;
 
     public void Init(float innerRadius, float outerRadius, float startAngle, float endAngle, Color baseColor, Color warningColor)
     {
@@ -46,7 +58,20 @@ public class ArenaSection : MonoBehaviour
         rb.isKinematic = true;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         homePosition = transform.position;
+        normalMaterial = col.sharedMaterial;
         SetColor(baseColor);
+    }
+
+    public void TriggerFreeze(float warning, float frozen, Color iceColor, PhysicsMaterial iceMaterial)
+    {
+        if (State != SectionState.Solid || Freeze != FreezeState.None) return;
+
+        freezeWarningDuration = warning;
+        frozenDuration = frozen;
+        this.iceColor = iceColor;
+        this.iceMaterial = iceMaterial;
+        Freeze = FreezeState.Warning;
+        freezeStart = Time.time;
     }
 
     public void TriggerFall(float warning, float fall, float gone, float rise, float distance)
@@ -61,8 +86,45 @@ public class ArenaSection : MonoBehaviour
         Enter(SectionState.Warning);
     }
 
+    // Moves the spot this section rests at (used to place the island on a new side each match)
+    public void SetHome(Vector3 position)
+    {
+        homePosition = position;
+        if (State == SectionState.Solid)
+        {
+            rb.position = position;
+            transform.position = position;
+        }
+    }
+
+    // Removed instantly and kept hidden until Emerge (used for the late-match island)
+    public void HideImmediate()
+    {
+        ClearFreeze();
+        StayDown = true;
+        Enter(SectionState.Gone);
+        rend.enabled = false;
+        col.enabled = false;
+    }
+
+    // Rises up from `distance` below its home position into place
+    public void Emerge(float rise, float distance)
+    {
+        StayDown = false;
+        riseDuration = rise;
+        fallDistance = distance;
+        rb.position = homePosition + Vector3.down * distance;
+        transform.position = rb.position;
+        SetColor(baseColor);
+        rend.enabled = true;
+        col.enabled = true;
+        Enter(SectionState.Rising);
+    }
+
     public void ResetImmediate()
     {
+        ClearFreeze();
+        StayDown = false;
         Enter(SectionState.Solid);
         rb.position = homePosition;
         transform.position = homePosition;
@@ -86,6 +148,46 @@ public class ArenaSection : MonoBehaviour
     {
         State = state;
         stateStart = Time.time;
+    }
+
+    private void Update()
+    {
+        if (Freeze == FreezeState.None) return;
+
+        float elapsed = Time.time - freezeStart;
+        if (Freeze == FreezeState.Warning)
+        {
+            // Same idea as the fall warning: flash faster as the freeze gets closer
+            float t = Mathf.Clamp01(elapsed / freezeWarningDuration);
+            float flash = Mathf.PingPong(elapsed * Mathf.Lerp(3f, 10f, t), 1f);
+            SetColor(Color.Lerp(baseColor, iceColor, flash));
+
+            if (elapsed >= freezeWarningDuration)
+            {
+                Freeze = FreezeState.Frozen;
+                freezeStart = Time.time;
+                col.sharedMaterial = iceMaterial;
+                SetColor(iceColor);
+            }
+        }
+        else if (elapsed >= frozenDuration)
+        {
+            ClearFreeze();
+            SetColor(baseColor);
+        }
+        else if (elapsed >= frozenDuration - ThawWarning)
+        {
+            // Flicker back toward normal just before thawing
+            SetColor(Color.Lerp(iceColor, baseColor, Mathf.PingPong(elapsed * 6f, 1f) * 0.6f));
+        }
+    }
+
+    private void ClearFreeze()
+    {
+        if (Freeze == FreezeState.None) return;
+        Freeze = FreezeState.None;
+        if (col == null) col = GetComponent<MeshCollider>();
+        col.sharedMaterial = normalMaterial;
     }
 
     private void FixedUpdate()
@@ -126,7 +228,7 @@ public class ArenaSection : MonoBehaviour
             }
 
             case SectionState.Gone:
-                if (elapsed >= goneDuration)
+                if (!StayDown && elapsed >= goneDuration)
                 {
                     SetColor(baseColor);
                     rend.enabled = true;

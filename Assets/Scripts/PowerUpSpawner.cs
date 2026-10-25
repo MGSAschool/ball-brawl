@@ -79,6 +79,10 @@ public class PowerUpSpawner : MonoBehaviour
             if (chosenPrefab != null)
             {
                 GameObject spawned = Instantiate(chosenPrefab, spawnPos, Quaternion.identity);
+                if (spawned.TryGetComponent<PowerUpPickUp>(out var prefabPickup) && prefabPickup.powerUp != null)
+                {
+                    spawned.AddComponent<PowerUpVisual>();
+                }
                 spawned.AddComponent<DespawnWhenUnsupported>();
                 activePowerUps.Add(spawned);
                 return;
@@ -95,6 +99,8 @@ public class PowerUpSpawner : MonoBehaviour
                 if (spawned.TryGetComponent<PowerUpPickUp>(out var pickup))
                 {
                     pickup.SetupPowerUp(modifier);
+                    // Shape and size show the power-up type and level
+                    spawned.AddComponent<PowerUpVisual>();
                 }
                 spawned.AddComponent<DespawnWhenUnsupported>();
                 activePowerUps.Add(spawned);

@@ -151,15 +151,22 @@ MonoBehaviour:
   powerUpPrefabs: []
   powerUps:
   - {fileID: 11400000, guid: efde02947e22a0943953b2ab2010cafb, type: 2}
+  - {fileID: 11400000, guid: a0674c1c5f1f2b4498bfad6f682d7443, type: 2}
+  - {fileID: 11400000, guid: f3e9a1edfe6027640ac3da27e4607e58, type: 2}
   - {fileID: 11400000, guid: b6b21a94bc9be4d4f85e592b867bbee4, type: 2}
+  - {fileID: 11400000, guid: 6de581f7b2739174fb697d09fff051a9, type: 2}
+  - {fileID: 11400000, guid: 5c339dfea3e6f8e458d48d4d555fddc6, type: 2}
   - {fileID: 11400000, guid: ddd327210de33b847973f8d1bb78008b, type: 2}
+  - {fileID: 11400000, guid: e0f2f6d748d792e4eb70df99565f30b7, type: 2}
+  - {fileID: 11400000, guid: 8020c8e83920b7d44a5212844495440b, type: 2}
   - {fileID: 11400000, guid: a48d6029edeed0142a34850242f6e0f0, type: 2}
   - {fileID: 11400000, guid: 189d6571fa094eb438f185f15a482173, type: 2}
+  - {fileID: 11400000, guid: 80244446804c81e4fbaa5e4053400f65, type: 2}
   pickupPrefab: {fileID: 4285734084558741710, guid: ec2ef76409b4aa342ad46292eb5d11f3, type: 3}
   spawnInterval: 5
   maxPowerUpsInArena: 6
   arenaCenter: {fileID: 1034040392}
-  arenaRadius: 35
+  arenaRadius: 18
   spawnHeight: 2
 --- !u!4 &24372774
 Transform:
@@ -201,7 +208,7 @@ Transform:
   m_GameObject: {fileID: 134764703}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.3826836, z: -0, w: 0.9238795}
-  m_LocalPosition: {x: 8.485284, y: 2.5, z: -8.485278}
+  m_LocalPosition: {x: 3.1819818, y: 2.5, z: -3.1819797}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -378,8 +385,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ArenaCamera
   match: {fileID: 987355195}
   arenaCenter: {fileID: 1034040392}
-  minDistance: 22
-  maxDistance: 70
+  minDistance: 20
+  maxDistance: 45
   zoomPerUnitSpread: 1.1
   smoothTime: 0.4
   referenceAspect: 1.7777778
@@ -521,6 +528,7 @@ GameObject:
   - component: {fileID: 987355196}
   - component: {fileID: 987355195}
   - component: {fileID: 987355194}
+  - component: {fileID: 987355197}
   m_Layer: 0
   m_Name: MatchManager
   m_TagString: Untagged
@@ -543,6 +551,7 @@ MonoBehaviour:
   match: {fileID: 987355195}
   coinRush: {fileID: 1333357110}
   announcementDuration: 2.5
+  tipInterval: 6
   referenceResolution: {x: 1920, y: 1080}
 --- !u!114 &987355195
 MonoBehaviour:
@@ -593,6 +602,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &987355197
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 987355193}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16cb1ca7a5f70b54faa5aaecc2f948d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OffscreenIndicators
+  match: {fileID: 0}
+  targetCamera: {fileID: 0}
+  referenceResolution: {x: 1920, y: 1080}
+  edgeMargin: 70
+  badgeSize: 64
+  offscreenBorder: 0.02
 --- !u!1 &1034040388
 GameObject:
   m_ObjectHideFlags: 0
@@ -702,7 +729,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 100, y: 1.0755383, z: 100}
+  m_LocalScale: {x: 44, y: 1.0755383, z: 44}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -719,20 +746,46 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b34f81fc09b74f448883c4c2a1cee3b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FallingPlatforms
-  safeRadius: 16
+  centerRadius: 7
+  middleDiscRadius: 2.5
   ringCount: 3
-  targetSectionLength: 14
+  targetSectionLength: 6
   sectionGap: 0.08
   thickness: 1
-  fallInterval: {x: 5, y: 9}
-  firstFallDelay: 10
-  maxDownAtOnce: 3
+  piecesPerFall: {x: 2, y: 3}
+  fallInterval: {x: 4, y: 7}
+  firstFallDelay: 8
+  maxDownAtOnce: 6
   warningDuration: 2
   fallDuration: 1.2
   goneDuration: 8
   riseDuration: 1.5
   fallDistance: 25
+  speedUpEvery: 30
+  intervalMultiplier: 0.8
+  timingMultiplier: 0.9
+  minWarningDuration: 0.9
+  extraDownPerSpeedUp: 2
+  permanentFallsAt: 80
+  islandAppearsAt: 60
+  arenaGoneBy: 10
+  finalPhaseMaxInterval: 4
+  hubRadius: 3.5
+  padRing: {x: 5.5, y: 8.5}
+  padCount: 6
+  padArcDegrees: 40
+  raisedPadHeight: 0.6
+  islandGap: 3
+  islandRiseDuration: 3
+  randomizeIslandSide: 1
+  islandAngle: 90
+  freezeInterval: {x: 4, y: 7}
+  padsPerFreeze: {x: 1, y: 2}
+  firstFreezeDelay: 5
+  freezeWarningDuration: 2
+  frozenDuration: 5
   warningColor: {r: 1, g: 0.25, b: 0.15, a: 1}
+  iceColor: {r: 0.55, g: 0.85, b: 1, a: 1}
   match: {fileID: 987355195}
 --- !u!1 &1067027647
 GameObject:
@@ -759,7 +812,7 @@ Transform:
   m_GameObject: {fileID: 1067027647}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.92387956, z: -0, w: 0.38268346}
-  m_LocalPosition: {x: -8.485281, y: 2.5, z: 8.485281}
+  m_LocalPosition: {x: -3.1819806, y: 2.5, z: 3.1819806}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -790,7 +843,7 @@ Transform:
   m_GameObject: {fileID: 1274381157}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.92387956, z: -0, w: -0.38268346}
-  m_LocalPosition: {x: 8.485281, y: 2.5, z: 8.485281}
+  m_LocalPosition: {x: 3.1819806, y: 2.5, z: 3.1819806}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -833,10 +886,10 @@ MonoBehaviour:
   rushDuration: 10
   minMatchTimeLeft: 8
   coinsPerRush: 15
-  minSpawnRadius: 18
+  minSpawnRadius: 9
   heightAboveFloor: 1.2
   arenaCenter: {fileID: 1034040392}
-  fallbackRadius: 45
+  fallbackRadius: 20
 --- !u!4 &1333357111
 Transform:
   m_ObjectHideFlags: 0
@@ -877,7 +930,7 @@ Transform:
   m_GameObject: {fileID: 1857287264}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.38268337, z: -0, w: 0.92387956}
-  m_LocalPosition: {x: -8.48528, y: 2.5, z: -8.485283}
+  m_LocalPosition: {x: -3.18198, y: 2.5, z: -3.181981}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

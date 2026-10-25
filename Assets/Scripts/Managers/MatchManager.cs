@@ -375,11 +375,25 @@ public class MatchManager : MonoBehaviour
         foreach (var col in entry.Player.GetComponentsInChildren<Collider>()) col.enabled = visible;
     }
 
+    // --- Spawn points ---
+    // Arena events can move spawning elsewhere for a while (e.g. onto the late-match island)
+    private Transform[] spawnOverride;
+
+    // Arena events can rule out respawn spots (e.g. over fallen floor) and offer a spot when none are left
+    public Func<Vector3, bool> SpawnPointCheck { get; set; }
+    public Func<Vector3?> SpawnFallback { get; set; }
+
+    public void SetSpawnOverride(Transform[] points) => spawnOverride = points != null && points.Length > 0 ? points : null;
+    public void ClearSpawnOverride() => spawnOverride = null;
+
+    private Transform[] ActiveSpawnPoints => spawnOverride ?? spawnPoints;
+
     private Vector3 GetSpawnPosition(int index)
     {
-        if (spawnPoints != null && spawnPoints.Length > 0)
+        var points = ActiveSpawnPoints;
+        if (points != null && points.Length > 0)
         {
-            return spawnPoints[index % spawnPoints.Length].position;
+            return points[index % points.Length].position;
         }
 
         // No spawn points assigned: spread players in a ring around the manager
@@ -390,13 +404,17 @@ public class MatchManager : MonoBehaviour
     // Respawn at the spawn point farthest from everyone still on the platform
     private Vector3 GetSafestSpawnPosition(PlayerEntry respawning)
     {
-        int count = spawnPoints != null && spawnPoints.Length > 0 ? spawnPoints.Length : maxPlayers;
+        var points = ActiveSpawnPoints;
+        int count = points != null && points.Length > 0 ? points.Length : maxPlayers;
         Vector3 best = GetSpawnPosition(0);
         float bestDistance = float.NegativeInfinity;
+        bool found = false;
 
         for (int i = 0; i < count; i++)
         {
             Vector3 candidate = GetSpawnPosition(i);
+            if (SpawnPointCheck != null && !SpawnPointCheck(candidate)) continue;
+            found = true;
             float nearest = float.PositiveInfinity;
             foreach (var other in players)
             {
@@ -409,6 +427,8 @@ public class MatchManager : MonoBehaviour
                 best = candidate;
             }
         }
+
+        if (!found && SpawnFallback != null && SpawnFallback() is Vector3 fallback) return fallback;
         return best;
     }
 
