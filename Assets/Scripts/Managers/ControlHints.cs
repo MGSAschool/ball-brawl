@@ -66,11 +66,21 @@ public static class ControlHints
     {
         switch (powerUp)
         {
-            case DashPowerUp: return "Dash";
-            case InvulnerablePowerUp: return "Invulnerability";
-            case SuperKnockbackPowerUp: return "Super Knockback";
-            case SpeedBoostPowerUp: return "Speed Boost";
+            case DashPowerUp: return "Dash " + LevelNumeral(powerUp);
+            case InvulnerablePowerUp: return "Invulnerability " + LevelNumeral(powerUp);
+            case SuperKnockbackPowerUp: return "Super Knockback " + LevelNumeral(powerUp);
+            case SpeedBoostPowerUp: return "Speed Boost " + LevelNumeral(powerUp);
             default: return powerUp != null ? powerUp.name : "";
+        }
+    }
+
+    public static string LevelNumeral(PowerUpModifier powerUp)
+    {
+        switch (powerUp != null ? powerUp.Level : 1)
+        {
+            case 3: return "III";
+            case 2: return "II";
+            default: return "I";
         }
     }
 
@@ -80,13 +90,17 @@ public static class ControlHints
         "Falling off on your own costs a point, so watch your footing near the edge.",
         "Jump to hop over a player charging at you.",
         "Save Invulnerability for when you're about to be hit near the edge.",
-        "Super Knockback lasts 10 seconds. Use it, then go hunting.",
-        "A Dash power-up gives 10 seconds of dashing. Tap it again to dash after the cooldown.",
+        "Super Knockback lasts 10 seconds. Level III hits three times as hard as level I.",
+        "A Dash power-up gives you a window of dashing (longer at higher levels). Tap it again to dash after the cooldown.",
+        "Power-ups come in levels I to III. Bigger, brighter pickups with more sparks around them are stronger.",
         "Dash back toward the middle if you get knocked close to the edge.",
         "Red, shaking floor is about to drop. Get off it!",
         "Coin Rush coins land near the edges. Big points, big risk.",
         "You can hold 2 power-ups. A full inventory leaves new pickups on the floor.",
-        "The center of the arena never falls. It's the safest place to regroup.",
+        "Even the middle of the arena can fall, and the floor crumbles faster every 30 seconds.",
+        "At 1:00 a new platform rises. Jump across before the old arena is gone.",
+        "Blue, flashing floor on the new platform freezes into slippery ice. Steer gently!",
+        "Lost track of your ball? An arrow at the screen edge points to it.",
         "Speed Boosts work the moment you grab them."
     };
 }

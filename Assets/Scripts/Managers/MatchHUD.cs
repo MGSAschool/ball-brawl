@@ -126,7 +126,7 @@ public class MatchHUD : MonoBehaviour
         GuideRow("Dash *", ControlHints.Action.Dash);
         GuideRow("Invulnerability *", ControlHints.Action.Invulnerability);
         GuideRow("Super Knockback *", ControlHints.Action.SuperKnockback);
-        sb.Append("</align><align=center><size=85%><color=#cccccc>* Uses a power-up you're holding. Grab them in the arena (2 slots, each lasts 10s).</color></size>\n\n");
+        sb.Append("</align><align=center><size=85%><color=#cccccc>* Uses a power-up you're holding. Grab them in the arena (2 slots). Levels I-III: bigger, brighter pickups are stronger.</color></size>\n\n");
 
         sb.Append($"<color=#FFD64D>TIP:</color> {CurrentTip()}</align>");
         return sb.ToString();
@@ -239,9 +239,9 @@ public class MatchHUD : MonoBehaviour
         switch (powerUp)
         {
             case null: return " - ";
-            case DashPowerUp: return "Dash";
-            case InvulnerablePowerUp: return "Invuln";
-            case SuperKnockbackPowerUp: return "Super KB";
+            case DashPowerUp: return "Dash " + ControlHints.LevelNumeral(powerUp);
+            case InvulnerablePowerUp: return "Invuln " + ControlHints.LevelNumeral(powerUp);
+            case SuperKnockbackPowerUp: return "Super KB " + ControlHints.LevelNumeral(powerUp);
             default: return powerUp.name;
         }
     }

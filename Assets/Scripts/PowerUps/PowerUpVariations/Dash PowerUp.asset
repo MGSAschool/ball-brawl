@@ -15,4 +15,5 @@ MonoBehaviour:
   duration: 10
   weight: 50
   sprite: {fileID: 21300000, guid: 628b5c5c61a2f2647a2534c4e5d422bd, type: 3}
+  level: 1
   dashCount: 1
