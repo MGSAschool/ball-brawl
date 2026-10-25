@@ -7,16 +7,28 @@ public class DeathZone : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.TryGetComponent<BrawlPlayer>(out var player))
-        {
-            StartCoroutine(RespawnRoutine(player));
-        }
-    }
+        BrawlPlayer player = other.GetComponentInParent<BrawlPlayer>();
+        if (player == null) return;
 
+        BombaClutchMinigame minigame = Object.FindAnyObjectByType<BombaClutchMinigame>();
+        if (minigame != null)
+        {
+            minigame.PlayerFell(player);
+        }
+
+        // In the main arena the match handles scoring and respawning
+        if (MatchManager.Instance != null)
+        {
+            MatchManager.Instance.HandlePlayerFell(player);
+            return;
+        }
+
+        StartCoroutine(RespawnRoutine(player));
+    }
     private IEnumerator RespawnRoutine(BrawlPlayer player)
     {
         Rigidbody rb = player.GetComponent<Rigidbody>();
-        
+
         // Freeze and hide player during delay
         rb.linearVelocity = Vector3.zero;
         rb.isKinematic = true;

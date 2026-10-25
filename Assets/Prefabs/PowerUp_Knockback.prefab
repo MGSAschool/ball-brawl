@@ -125,5 +125,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 700838bb0997c404390c71a646500fa0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PowerUpPickUp
-  powerUp: {fileID: 11400000, guid: d3b9d25a502fcef4d8fc7b839cd00a4b, type: 2}
+  powerUp: {fileID: 11400000, guid: ddd327210de33b847973f8d1bb78008b, type: 2}
   rotationSpeed: 90

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 867282a85cd3e0045aa29b54783fac6b, type: 3}
   m_Name: Dash PowerUp
   m_EditorClassIdentifier: Assembly-CSharp::DashPowerUp
-  duration: 15
+  duration: 10
   weight: 50
   sprite: {fileID: 21300000, guid: 628b5c5c61a2f2647a2534c4e5d422bd, type: 3}
   dashCount: 1

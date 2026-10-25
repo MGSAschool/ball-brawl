@@ -27,6 +27,36 @@
                     "priority": 0
                 },
                 {
+                    "name": "Jump",
+                    "type": "Button",
+                    "id": "b52e8f17-4c09-4d6a-9e3b-7a1f0c2d8e94",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "Invulnerability",
+                    "type": "Button",
+                    "id": "7c1e5a0b-3f4d-4b8e-9a61-2d5f8c3e1b70",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "SuperKnockback",
+                    "type": "Button",
+                    "id": "e4a9d2c6-8b17-4f30-a5e2-91c7b6d04f3a",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
                     "name": "Use Power Up",
                     "type": "Button",
                     "id": "8e0f28df-811f-45e9-8cfe-e8feeb18c216",
@@ -162,7 +192,7 @@
                 {
                     "name": "",
                     "id": "028d8504-01dc-45a6-8fc5-ea3406ac0c14",
-                    "path": "<Keyboard>/shift",
+                    "path": "<Keyboard>/leftShift",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard",
@@ -189,6 +219,105 @@
                     "processors": "",
                     "groups": ";Arrows",
                     "action": "Dash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "6a0d3f81-b7e2-4c95-8d14-e9c2a5f7b038",
+                    "path": "<Keyboard>/space",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard",
+                    "action": "Jump",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "d39c7b24-0e6f-4a18-b5d2-4f8e1a6c9b70",
+                    "path": "<Keyboard>/rightCtrl",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Arrows",
+                    "action": "Jump",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f8e15a92-3d7c-4b06-a2e9-c0b4d6f1e357",
+                    "path": "<Gamepad>/buttonSouth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Gamepad",
+                    "action": "Jump",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "1b6f0e3a-5c2d-4e79-b8a4-0f9d3c6e2a15",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard",
+                    "action": "Invulnerability",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a83d27c4-9e15-4b60-8f2a-6c4e1d9b7032",
+                    "path": "<Gamepad>/buttonNorth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Gamepad",
+                    "action": "Invulnerability",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5d92b1e8-0a4f-4c37-96e3-b2f8a7c51d4e",
+                    "path": "<Keyboard>/period",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Arrows",
+                    "action": "Invulnerability",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c07e4f92-6b3a-4d1e-a8c5-3e9f2b6d0a81",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard",
+                    "action": "SuperKnockback",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8f4a6c1d-2e9b-4a73-b05f-d7c3e8a9b246",
+                    "path": "<Gamepad>/buttonEast",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Gamepad",
+                    "action": "SuperKnockback",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "2e7b9d05-c4a1-4f86-9d3e-a1b5c8f02e67",
+                    "path": "<Keyboard>/slash",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Arrows",
+                    "action": "SuperKnockback",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

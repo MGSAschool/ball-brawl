@@ -1,5 +1,6 @@
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class PowerUpPickUp : MonoBehaviour
 {
@@ -19,6 +20,17 @@ public class PowerUpPickUp : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        // Brawl players store the power-up in their inventory slots; stays in the arena if both are full
+        PlayerInventory inventory = other.GetComponentInParent<PlayerInventory>();
+        if (inventory != null)
+        {
+            if (inventory.TryCollect(powerUp))
+            {
+                Destroy(gameObject);
+            }
+            return;
+        }
+
         // Check for tag OR BrawlPlayer script
         if (other.CompareTag("Player") || other.GetComponentInParent<BrawlPlayer>() != null)
         {
@@ -26,8 +38,8 @@ public class PowerUpPickUp : MonoBehaviour
             {
                 // powerUp.ApplyModifier(other.gameObject);
                 // Debug.Log(powerUp.name);
-                PowerupInventory inventory = other.GetComponent<PowerupInventory>();
-                inventory.StorePowerUp(powerUp);
+                PowerupInventory powerupInventory = other.GetComponent<PowerupInventory>();
+                if (powerupInventory != null) powerupInventory.StorePowerUp(powerUp);
             }
 
             Destroy(gameObject);

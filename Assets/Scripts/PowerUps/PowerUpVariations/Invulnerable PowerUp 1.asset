@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bbc90ee4269d42b47adf814b3fc6bb7b, type: 3}
   m_Name: Invulnerable PowerUp 1
   m_EditorClassIdentifier: Assembly-CSharp::InvulnerablePowerUp
-  duration: 5
+  duration: 10
   weight: 50
   sprite: {fileID: 21300000, guid: 38e43e99f4f35cc4b8ee8843cab63a04, type: 3}
