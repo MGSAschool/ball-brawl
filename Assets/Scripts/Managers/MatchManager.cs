@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -18,11 +19,18 @@ public class MatchManager : MonoBehaviour
         public int Score;
         public int Knockouts;
         public int Falls;
+        public int Coins;
         public bool IsRespawning;
         public float RespawnAt;
+        public string ControlScheme;
+        // Power-up types this player has already been shown a "press X" hint for
+        public readonly HashSet<System.Type> HintedPowerUps = new HashSet<System.Type>();
     }
 
     public static MatchManager Instance { get; private set; }
+
+    // Fired after every state change; arena events use it to start, stop and reset
+    public event Action<MatchState> StateChanged;
 
     [Header("Players")]
     [SerializeField] private GameObject playerPrefab;
@@ -161,10 +169,12 @@ public class MatchManager : MonoBehaviour
             Player = player,
             Inventory = input.GetComponent<PlayerInventory>(),
             Name = $"P{index + 1}",
-            Color = playerColors.Length > 0 ? playerColors[index % playerColors.Length] : Color.white
+            Color = playerColors.Length > 0 ? playerColors[index % playerColors.Length] : Color.white,
+            ControlScheme = controlScheme
         };
         input.gameObject.name = $"Player {index + 1} ({controlScheme})";
         players.Add(entry);
+        if (entry.Inventory != null) entry.Inventory.Collected += powerUp => ShowPowerUpHint(entry, powerUp);
 
         foreach (var rend in input.GetComponentsInChildren<Renderer>())
         {
@@ -175,6 +185,18 @@ public class MatchManager : MonoBehaviour
         PlaceAtSpawn(entry, GetSpawnPosition(index));
         Announce($"{entry.Name} joined ({controlScheme})");
         return true;
+    }
+
+    // First time each player grabs a power-up type, tell them which of *their* keys uses it
+    private void ShowPowerUpHint(PlayerEntry entry, PowerUpModifier powerUp)
+    {
+        if (!entry.HintedPowerUps.Add(powerUp.GetType())) return;
+
+        string name = ControlHints.PowerUpName(powerUp);
+        string key = ControlHints.KeyFor(entry.ControlScheme, powerUp);
+        Announce(key != null
+            ? $"{entry.Name}: {name} stored - press {key} to use it"
+            : $"{entry.Name}: {name}!");
     }
 
     // The arena uses one shared camera, so per-player cameras on the prefab are switched off
@@ -203,7 +225,7 @@ public class MatchManager : MonoBehaviour
     // --- Match flow ---
     private void StartCountdown()
     {
-        State = MatchState.Countdown;
+        SetState(MatchState.Countdown);
         CountdownRemaining = countdownDuration;
         winners.Clear();
 
@@ -219,6 +241,7 @@ public class MatchManager : MonoBehaviour
             entry.Score = 0;
             entry.Knockouts = 0;
             entry.Falls = 0;
+            entry.Coins = 0;
             entry.IsRespawning = false;
             if (entry.Inventory != null) entry.Inventory.Clear();
             PlaceAtSpawn(entry, GetSpawnPosition(i));
@@ -228,7 +251,7 @@ public class MatchManager : MonoBehaviour
 
     private void BeginMatch()
     {
-        State = MatchState.Playing;
+        SetState(MatchState.Playing);
         TimeRemaining = matchDuration;
         foreach (var entry in players)
         {
@@ -240,7 +263,7 @@ public class MatchManager : MonoBehaviour
 
     private void EndMatch()
     {
-        State = MatchState.MatchOver;
+        SetState(MatchState.MatchOver);
         TimeRemaining = 0f;
         matchEndedAt = Time.time;
         if (powerUpSpawner != null) powerUpSpawner.enabled = false;
@@ -255,6 +278,23 @@ public class MatchManager : MonoBehaviour
         }
 
         Announce(winners.Count == 1 ? $"{winners[0].Name} wins!" : "It's a draw!");
+    }
+
+    private void SetState(MatchState newState)
+    {
+        State = newState;
+        StateChanged?.Invoke(newState);
+    }
+
+    // --- Scoring from arena events ---
+    public bool AwardCoins(BrawlPlayer player, int amount)
+    {
+        var entry = FindEntry(player);
+        if (entry == null || State != MatchState.Playing || entry.IsRespawning) return false;
+
+        entry.Coins += amount;
+        entry.Score += amount;
+        return true;
     }
 
     // --- Knock-offs & respawning ---
@@ -378,7 +418,7 @@ public class MatchManager : MonoBehaviour
         return players.FirstOrDefault(p => p.Player == player);
     }
 
-    private void Announce(string message)
+    public void Announce(string message)
     {
         Announcement = message;
         AnnouncementTime = Time.time;

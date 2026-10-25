@@ -68,6 +68,9 @@ public class PowerUpSpawner : MonoBehaviour
         Vector3 origin = arenaCenter != null ? arenaCenter.position : Vector3.zero;
         Vector3 spawnPos = origin + new Vector3(randomCircle.x, spawnHeight, randomCircle.y);
 
+        // Skip this tick if the spot is over a hole (e.g. a fallen platform)
+        if (!Physics.Raycast(spawnPos, Vector3.down, spawnHeight + 3f, ~0, QueryTriggerInteraction.Ignore)) return;
+
         // Mode 1: Spawn from designated full prefabs
         if (powerUpPrefabs != null && powerUpPrefabs.Length > 0)
         {
@@ -76,6 +79,7 @@ public class PowerUpSpawner : MonoBehaviour
             if (chosenPrefab != null)
             {
                 GameObject spawned = Instantiate(chosenPrefab, spawnPos, Quaternion.identity);
+                spawned.AddComponent<DespawnWhenUnsupported>();
                 activePowerUps.Add(spawned);
                 return;
             }
@@ -92,6 +96,7 @@ public class PowerUpSpawner : MonoBehaviour
                 {
                     pickup.SetupPowerUp(modifier);
                 }
+                spawned.AddComponent<DespawnWhenUnsupported>();
                 activePowerUps.Add(spawned);
             }
         }

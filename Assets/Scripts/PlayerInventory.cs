@@ -23,6 +23,9 @@ public class PlayerInventory : MonoBehaviour
         }
     }
 
+    // Raised when a power-up is stored in a slot or applied on pickup (used for in-game hints)
+    public event System.Action<PowerUpModifier> Collected;
+
     public PowerUpModifier GetSlot(int index) => slots[index];
 
     public bool TryCollect(PowerUpModifier powerUp)
@@ -32,6 +35,7 @@ public class PlayerInventory : MonoBehaviour
         if (powerUp is SpeedBoostPowerUp)
         {
             player.GrantSpeedBoost(powerUp.ModifyMultiplier(1f), powerUp.Duration);
+            Collected?.Invoke(powerUp);
             return true;
         }
 
@@ -40,6 +44,7 @@ public class PlayerInventory : MonoBehaviour
             if (slots[i] == null)
             {
                 slots[i] = powerUp;
+                Collected?.Invoke(powerUp);
                 return true;
             }
         }
