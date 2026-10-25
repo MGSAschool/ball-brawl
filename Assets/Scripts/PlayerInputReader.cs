@@ -6,6 +6,7 @@ public class PlayerInputReader : MonoBehaviour
 {
     public Vector2 moveInput {get; private set;}
     public event Action DashPressed;
+    public event Action PowerupPressed;
 
     public void OnMove(InputValue value)
     {
@@ -16,5 +17,11 @@ public class PlayerInputReader : MonoBehaviour
     {
         if(value.isPressed) DashPressed?.Invoke();
     }
+
+    public void OnUsePowerUp(InputValue value)
+    {
+        if(value.isPressed)PowerupPressed?.Invoke();
+    }
+    
 
 }

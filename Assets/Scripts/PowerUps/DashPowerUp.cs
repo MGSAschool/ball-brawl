@@ -8,9 +8,10 @@ public class DashPowerUp : PowerUpModifier
     public int dashCount = 1;
     public override void ApplyModifier(GameObject target)
     {
-        if(target.TryGetComponent<PowerUpHandler>(out var handler))
+        if(target.TryGetComponent<PowerUpHandler>(out var handler) && target.TryGetComponent<PlayerController>(out var player))
         {
             handler.AddPowerUp(this);
+            player.OnDash();
         }   
     }
 }

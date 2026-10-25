@@ -151,10 +151,10 @@ MonoBehaviour:
   powerUpPrefabs: []
   powerUps:
   - {fileID: 11400000, guid: efde02947e22a0943953b2ab2010cafb, type: 2}
-  - {fileID: 11400000, guid: cb5a998f4d6992245b14a698c65d9363, type: 2}
-  - {fileID: 11400000, guid: d3b9d25a502fcef4d8fc7b839cd00a4b, type: 2}
+  - {fileID: 11400000, guid: b6b21a94bc9be4d4f85e592b867bbee4, type: 2}
+  - {fileID: 11400000, guid: ddd327210de33b847973f8d1bb78008b, type: 2}
   - {fileID: 11400000, guid: a48d6029edeed0142a34850242f6e0f0, type: 2}
-  - {fileID: 11400000, guid: 005326d397b1fc24293fd0ff99d5cc98, type: 2}
+  - {fileID: 11400000, guid: 189d6571fa094eb438f185f15a482173, type: 2}
   pickupPrefab: {fileID: 4285734084558741710, guid: ec2ef76409b4aa342ad46292eb5d11f3, type: 3}
   spawnInterval: 5
   maxPowerUpsInArena: 6

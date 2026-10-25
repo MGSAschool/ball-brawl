@@ -55,6 +55,16 @@
                     "interactions": "",
                     "initialStateCheck": false,
                     "priority": 0
+                },
+                {
+                    "name": "Use Power Up",
+                    "type": "Button",
+                    "id": "8e0f28df-811f-45e9-8cfe-e8feeb18c216",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
                 }
             ],
             "bindings": [
@@ -308,6 +318,28 @@
                     "processors": "",
                     "groups": ";Arrows",
                     "action": "SuperKnockback",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "60884187-f723-499a-a797-a2593e8556ea",
+                    "path": "<Keyboard>/shift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard",
+                    "action": "Use Power Up",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "3730ab04-69bd-4a33-8291-6c5a9f1a5dcd",
+                    "path": "<Keyboard>/rightShift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Arrows",
+                    "action": "Use Power Up",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

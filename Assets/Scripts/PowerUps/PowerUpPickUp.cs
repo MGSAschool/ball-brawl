@@ -36,8 +36,10 @@ public class PowerUpPickUp : MonoBehaviour
         {
             if (powerUp != null)
             {
-                powerUp.ApplyModifier(other.gameObject);
-                Debug.Log(powerUp.name);
+                // powerUp.ApplyModifier(other.gameObject);
+                // Debug.Log(powerUp.name);
+                PowerupInventory powerupInventory = other.GetComponent<PowerupInventory>();
+                if (powerupInventory != null) powerupInventory.StorePowerUp(powerUp);
             }
 
             Destroy(gameObject);
