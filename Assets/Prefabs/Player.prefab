@@ -151,11 +151,13 @@ GameObject:
   - component: {fileID: 3349406058894891124}
   - component: {fileID: 5180232530240264056}
   - component: {fileID: 4589879198016967285}
-  - component: {fileID: 5095515900124366293}
   - component: {fileID: -7174733691621245900}
   - component: {fileID: 5771568192475376150}
   - component: {fileID: -3140288858698308315}
   - component: {fileID: -275157522054488238}
+  - component: {fileID: 6585117233454281682}
+  - component: {fileID: 2900943301250033182}
+  - component: {fileID: 7307333872077393931}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -298,23 +300,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BrawlPlayer
   moveSpeed: 10
   dashForce: 20
+  dashCooldown: 0.75
+  jumpHeight: 1.2
+  groundCheckDistance: 0.15
   baseHitForce: 12
   knockbackStunDuration: 0.35
---- !u!114 &5095515900124366293
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6289414871106444190}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ead2f897a88adcf49a553edcbb680e40, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
-  slots:
-  - {fileID: 0}
-  - {fileID: 0}
 --- !u!114 &-7174733691621245900
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -457,3 +447,46 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a788913130c99b8458c0319262a2572c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInputReader
+--- !u!114 &6585117233454281682
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6289414871106444190}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8bced6e6eb397ec4eacddc64a78a6a91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PowerupInventory
+  maxCapacity: 2
+  powerupInventory: []
+--- !u!114 &2900943301250033182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6289414871106444190}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a00fa5de4b127884a864db0ee5d13988, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BrawlPowerUps
+--- !u!114 &7307333872077393931
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6289414871106444190}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b86b3c272889ec8418febc1ce600a5db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BallSkin
+  turnSpeed: 10
+  sizeMultiplier: 1.05
+  bubbleSize: 1.45
+  bubbleColor: {r: 0.35, g: 0.9, b: 1, a: 0.22}
+  bubbleLinesColor: {r: 0.85, g: 1, b: 1, a: 0.6}

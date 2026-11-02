@@ -27,7 +27,6 @@ public class OffscreenIndicators : MonoBehaviour
     private readonly Dictionary<MatchManager.PlayerEntry, Indicator> indicators = new Dictionary<MatchManager.PlayerEntry, Indicator>();
     private RectTransform canvasRect;
     private Canvas canvas;
-    private static Sprite circleSprite;
     private static Sprite arrowSprite;
 
     private void Awake()
@@ -143,13 +142,13 @@ public class OffscreenIndicators : MonoBehaviour
         var badge = new GameObject("Badge", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
         badge.rectTransform.SetParent(root, false);
         badge.rectTransform.sizeDelta = Vector2.one * badgeSize;
-        badge.sprite = CircleSprite();
+        badge.sprite = ArtUtil.Circle();
         badge.color = entry.Color;
 
         var ring = new GameObject("Outline", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
         ring.rectTransform.SetParent(badge.rectTransform, false);
         ring.rectTransform.sizeDelta = Vector2.one * (badgeSize * 0.82f);
-        ring.sprite = CircleSprite();
+        ring.sprite = ArtUtil.Circle();
         ring.color = new Color(0f, 0f, 0f, 0.55f);
 
         var label = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI)).GetComponent<TextMeshProUGUI>();
@@ -157,35 +156,17 @@ public class OffscreenIndicators : MonoBehaviour
         label.rectTransform.sizeDelta = Vector2.one * badgeSize;
         label.alignment = TextAlignmentOptions.Center;
         label.fontSize = badgeSize * 0.3f;
-        label.fontStyle = FontStyles.Bold;
+        var art = GameArt.Instance;
+        if (art != null && art.font != null) label.font = art.font;
+        else label.fontStyle = FontStyles.Bold;
+        label.outlineWidth = 0.2f;
+        label.outlineColor = new Color(0.17f, 0.10f, 0.29f);
         label.lineSpacing = -20f;
         label.color = Color.white;
         label.raycastTarget = false;
 
         root.gameObject.SetActive(false);
         return new Indicator { Root = root, Arrow = arrowPivot, Label = label };
-    }
-
-    private static Sprite CircleSprite()
-    {
-        if (circleSprite != null) return circleSprite;
-        const int size = 128;
-        var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
-        var pixels = new Color32[size * size];
-        float r = size * 0.5f;
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(r, r));
-                byte a = (byte)(Mathf.Clamp01(r - d) * 255f);
-                pixels[y * size + x] = new Color32(255, 255, 255, a);
-            }
-        }
-        texture.SetPixels32(pixels);
-        texture.Apply();
-        circleSprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
-        return circleSprite;
     }
 
     // Triangle pointing right (+X), so rotating it by the direction angle aims it

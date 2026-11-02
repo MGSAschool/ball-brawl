@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55bba8c851baf8e4eb3433c8496e20f4, type: 3}
+  m_Name: GameArt
+  m_EditorClassIdentifier: Assembly-CSharp::GameArt
+  ballSkins:
+  - {fileID: 919132149155446097, guid: ae93407fdc6020143bfe74883ad5ac5b, type: 3}
+  - {fileID: 919132149155446097, guid: 67f1dc93d1d60b4479132d9a30cc9140, type: 3}
+  - {fileID: 919132149155446097, guid: 1a36cc3b99c5edc40bcbef8cd5a1d292, type: 3}
+  - {fileID: 919132149155446097, guid: 6526c66744a554244ace9fe9a24facbe, type: 3}
+  dashModel: {fileID: 7449782648777001352, guid: 0d336c22198cd2c468ab6f964a883c99, type: 3}
+  invulnerabilityModel: {fileID: -6482369771696869591, guid: f38031116521dcd44b6010a6ce2435e4, type: 3}
+  superKnockbackModel: {fileID: -6587680140223114509, guid: 5b1e78c2435206b4da846138d30b5605, type: 3}
+  shieldBubble: {fileID: 8771091787928289351, guid: 6dce0606aea13dc45b42dee9b2b53f9a, type: 3}
+  font: {fileID: 11400000, guid: bafdb567b3f8f264b8196b0a6ac3f709, type: 2}
+  logo: {fileID: -765909358938296604, guid: 3f8f9ad395ad7104083ac2b3fa74705d, type: 3}
+  scoreboardFrame: {fileID: 1840059084634729652, guid: b3d11a68f7b75714b814533d80422290, type: 3}
+  howToPlayFrame: {fileID: 2450565909728410856, guid: 673f0d000e0b9e548970b64772e8e0d0, type: 3}
+  inventoryFrame: {fileID: 890974472578598604, guid: d3dabd25299a769429c328f7430f02ee, type: 3}
+  namePlate: {fileID: 3204213594579170988, guid: 6dad0bc9debaddc4fb24c89a71273025, type: 3}
+  pointsIcon: {fileID: -6454717568534380362, guid: fc8ce868422aa1d4c801ba234f9334d4, type: 3}
+  coinIcon: {fileID: -4967122974225729144, guid: 63d42310551c18341a0edf0926da2813, type: 3}
+  playButton: {fileID: 2024816889721293282, guid: dd7d84e18999ced4aa8eb93032e7de70, type: 3}
+  howToPlayButton: {fileID: 3744821489564434614, guid: 363f9c9e8d3d9fa4898b7dc070d2fb32, type: 3}
+  leaveButton: {fileID: -613643680462750644, guid: 2ea4b720f9e3b334f826ac2fe003ebf3, type: 3}

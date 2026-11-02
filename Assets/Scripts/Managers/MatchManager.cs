@@ -13,7 +13,7 @@ public class MatchManager : MonoBehaviour
     public class PlayerEntry
     {
         public BrawlPlayer Player;
-        public PlayerInventory Inventory;
+        public BrawlPowerUps PowerUps;
         public string Name;
         public Color Color;
         public int Score;
@@ -42,7 +42,7 @@ public class MatchManager : MonoBehaviour
         new Color(0.95f, 0.30f, 0.30f),
         new Color(0.30f, 0.55f, 0.95f),
         new Color(0.35f, 0.85f, 0.40f),
-        new Color(0.98f, 0.80f, 0.25f)
+        new Color(1.00f, 0.60f, 0.20f)
     };
 
     [Header("Match Rules")]
@@ -97,7 +97,9 @@ public class MatchManager : MonoBehaviour
 
     private void Start()
     {
-        if (powerUpSpawner != null) powerUpSpawner.enabled = false;
+        // Power-ups keep dropping in the lobby so players can try them while they wait;
+        // the countdown clears them so the match starts fresh
+        if (powerUpSpawner != null) powerUpSpawner.enabled = true;
         Announce("Join in, then press ENTER / START to brawl!");
     }
 
@@ -167,18 +169,23 @@ public class MatchManager : MonoBehaviour
         var entry = new PlayerEntry
         {
             Player = player,
-            Inventory = input.GetComponent<PlayerInventory>(),
+            PowerUps = input.GetComponent<BrawlPowerUps>(),
             Name = $"P{index + 1}",
             Color = playerColors.Length > 0 ? playerColors[index % playerColors.Length] : Color.white,
             ControlScheme = controlScheme
         };
         input.gameObject.name = $"Player {index + 1} ({controlScheme})";
         players.Add(entry);
-        if (entry.Inventory != null) entry.Inventory.Collected += powerUp => ShowPowerUpHint(entry, powerUp);
+        if (entry.PowerUps != null) entry.PowerUps.Collected += powerUp => ShowPowerUpHint(entry, powerUp);
 
-        foreach (var rend in input.GetComponentsInChildren<Renderer>())
+        // Character ball for this slot; plain tint when no skin art is set up
+        bool skinned = input.TryGetComponent<BallSkin>(out var skin) && skin.Apply(index);
+        if (!skinned)
         {
-            rend.material.color = entry.Color;
+            foreach (var rend in input.GetComponentsInChildren<Renderer>())
+            {
+                rend.material.color = entry.Color;
+            }
         }
 
         DisablePlayerCameras(input.gameObject);
@@ -193,10 +200,8 @@ public class MatchManager : MonoBehaviour
         if (!entry.HintedPowerUps.Add(powerUp.GetType())) return;
 
         string name = ControlHints.PowerUpName(powerUp);
-        string key = ControlHints.KeyFor(entry.ControlScheme, powerUp);
-        Announce(key != null
-            ? $"{entry.Name}: {name} stored - press {key} to use it"
-            : $"{entry.Name}: {name}!");
+        string key = ControlHints.Key(entry.ControlScheme, ControlHints.Action.UsePowerUp);
+        Announce($"{entry.Name}: {name} stored - {key} uses your oldest power-up");
     }
 
     // The arena uses one shared camera, so per-player cameras on the prefab are switched off
@@ -223,6 +228,14 @@ public class MatchManager : MonoBehaviour
     }
 
     // --- Match flow ---
+    // For menu buttons: same as pressing ENTER / START
+    public bool TryStartMatch()
+    {
+        if (!CanStart) return false;
+        StartCountdown();
+        return true;
+    }
+
     private void StartCountdown()
     {
         SetState(MatchState.Countdown);
@@ -243,7 +256,7 @@ public class MatchManager : MonoBehaviour
             entry.Falls = 0;
             entry.Coins = 0;
             entry.IsRespawning = false;
-            if (entry.Inventory != null) entry.Inventory.Clear();
+            if (entry.PowerUps != null) entry.PowerUps.Clear();
             PlaceAtSpawn(entry, GetSpawnPosition(i));
         }
         Announce("Get ready...");

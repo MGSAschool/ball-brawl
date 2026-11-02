@@ -553,6 +553,8 @@ MonoBehaviour:
   announcementDuration: 2.5
   tipInterval: 6
   referenceResolution: {x: 1920, y: 1080}
+  powerUpBoxPrefab: {fileID: 5364019360960271411, guid: 40e6ce5d4c235dd49ae472ba708891a3, type: 3}
+  powerUpBoxGap: 16
 --- !u!114 &987355195
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -577,7 +579,7 @@ MonoBehaviour:
   - {r: 0.95, g: 0.3, b: 0.3, a: 1}
   - {r: 0.3, g: 0.55, b: 0.95, a: 1}
   - {r: 0.35, g: 0.85, b: 0.4, a: 1}
-  - {r: 0.98, g: 0.8, b: 0.25, a: 1}
+  - {r: 1, g: 0.6, b: 0.2, a: 1}
   matchDuration: 180
   countdownDuration: 3
   respawnDelay: 3
