@@ -21,6 +21,8 @@ MonoBehaviour:
   invulnerabilityModel: {fileID: -6482369771696869591, guid: f38031116521dcd44b6010a6ce2435e4, type: 3}
   superKnockbackModel: {fileID: -6587680140223114509, guid: 5b1e78c2435206b4da846138d30b5605, type: 3}
   shieldBubble: {fileID: 8771091787928289351, guid: 6dce0606aea13dc45b42dee9b2b53f9a, type: 3}
+  bombModel: {fileID: -6929390386786155498, guid: 49713ca4b7b319540aff972144c39537, type: 3}
+  bounceSound: {fileID: 8300000, guid: d6c6efb439cce944799a6ac1ef83b876, type: 3}
   font: {fileID: 11400000, guid: bafdb567b3f8f264b8196b0a6ac3f709, type: 2}
   logo: {fileID: -765909358938296604, guid: 3f8f9ad395ad7104083ac2b3fa74705d, type: 3}
   scoreboardFrame: {fileID: 1840059084634729652, guid: b3d11a68f7b75714b814533d80422290, type: 3}

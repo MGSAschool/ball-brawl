@@ -19,6 +19,14 @@ public class GameArt : ScriptableObject
     [Tooltip("Bubble shown around a ball while it is invulnerable.")]
     public GameObject shieldBubble;
 
+    [Header("Minigames")]
+    [Tooltip("BombaClutch bomb model (replaces the Bomb prefab's plain sphere).")]
+    public GameObject bombModel;
+
+    [Header("Sound")]
+    [Tooltip("Ball bounce recording; the first bounce is used when a ball lands.")]
+    public AudioClip bounceSound;
+
     [Header("UI")]
     public TMP_FontAsset font;
     public Sprite logo;

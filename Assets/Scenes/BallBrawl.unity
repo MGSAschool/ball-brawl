@@ -529,6 +529,8 @@ GameObject:
   - component: {fileID: 987355195}
   - component: {fileID: 987355194}
   - component: {fileID: 987355197}
+  - component: {fileID: 987355199}
+  - component: {fileID: 987355198}
   m_Layer: 0
   m_Name: MatchManager
   m_TagString: Untagged
@@ -554,7 +556,8 @@ MonoBehaviour:
   tipInterval: 6
   referenceResolution: {x: 1920, y: 1080}
   powerUpBoxPrefab: {fileID: 5364019360960271411, guid: 40e6ce5d4c235dd49ae472ba708891a3, type: 3}
-  powerUpBoxGap: 16
+  cornerMargin: 24
+  behindAlpha: 0.3
 --- !u!114 &987355195
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -581,6 +584,7 @@ MonoBehaviour:
   - {r: 0.35, g: 0.85, b: 0.4, a: 1}
   - {r: 1, g: 0.6, b: 0.2, a: 1}
   matchDuration: 180
+  minigameDuration: 120
   countdownDuration: 3
   respawnDelay: 3
   spawnProtection: 1.5
@@ -622,6 +626,60 @@ MonoBehaviour:
   edgeMargin: 70
   badgeSize: 64
   offscreenBorder: 0.02
+--- !u!114 &987355198
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 987355193}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f912ef36b4d5ed24992fa2b63c97fb2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BombaClutchMode
+  match: {fileID: 987355195}
+  arena: {fileID: 1034040393}
+  bombPrefab: {fileID: 5854813104348491401, guid: 1858ea32dbe64024394efda0847e729b, type: 3}
+  startSpawnInterval: 1.3
+  endSpawnInterval: 0.55
+  startMaxBombs: 10
+  endMaxBombs: 20
+  spawnHeight: 1.2
+  endFuseMultiplier: 0.65
+  endForceMultiplier: 1.2
+  pointsPerBomb: 1
+  chainRadiusFraction: 0.55
+  chainDelay: 0.15
+--- !u!114 &987355199
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 987355193}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2dc562c8c81f7b4498f368502375b625, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StaphItMode
+  match: {fileID: 987355195}
+  arena: {fileID: 1034040393}
+  greenAtStart: {x: 5, y: 8}
+  greenAtEnd: {x: 2.5, y: 4.5}
+  yellowAtStart: 2.2
+  yellowAtEnd: 1.3
+  redDuration: 3
+  firstRoundBonus: 3
+  radiusAtStart: 7
+  radiusAtEnd: 4
+  minMoveDistance: 12
+  survivePoints: 1
+  caughtPenalty: 1
+  zapForce: 14
+  green: {r: 0.3, g: 1, b: 0.45, a: 1}
+  yellow: {r: 1, g: 0.85, b: 0.2, a: 1}
+  red: {r: 1, g: 0.2, b: 0.2, a: 1}
 --- !u!1 &1034040388
 GameObject:
   m_ObjectHideFlags: 0

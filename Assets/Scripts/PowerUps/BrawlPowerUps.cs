@@ -54,7 +54,11 @@ public class BrawlPowerUps : MonoBehaviour
     private void OnPickup()
     {
         Remember();
-        if (!refunding && Items.Count > 0) Collected?.Invoke(Items[Items.Count - 1]);
+        if (refunding || Items.Count == 0) return;
+        var item = Items[Items.Count - 1];
+        Sfx.Play(Sound.Pickup, transform.position);
+        Vfx.Sparkle(transform.position, PowerUpVisual.ColorFor(item));
+        Collected?.Invoke(item);
     }
 
     private void OnUse()
@@ -72,20 +76,25 @@ public class BrawlPowerUps : MonoBehaviour
             return;
         }
 
+        Vector3 at = transform.position;
+        Vfx.Poof(at, PowerUpVisual.ColorFor(used));
         switch (used)
         {
             case DashPowerUp:
                 player.GrantDash(used.Duration);
-                player.Dash();
+                DashWithEffects();
                 break;
             case InvulnerablePowerUp:
                 player.GrantInvulnerability(used.Duration);
+                Sfx.Play(Sound.UseShield, at);
                 break;
             case SuperKnockbackPowerUp:
                 player.GrantSuperKnockback(used.ModifyMultiplier(1f), used.Duration);
+                Sfx.Play(Sound.UsePunch, at);
                 break;
             case SpeedBoostPowerUp:
                 player.GrantSpeedBoost(used.ModifyMultiplier(1f), used.Duration);
+                Sfx.Play(Sound.UseSpeed, at);
                 break;
         }
     }
@@ -93,7 +102,14 @@ public class BrawlPowerUps : MonoBehaviour
     // While a Dash power-up is running, the Dash key dashes freely (cooldown permitting)
     private void OnDashPressed()
     {
-        if (player.ControlsEnabled && player.HasDash) player.Dash();
+        if (player.ControlsEnabled && player.HasDash) DashWithEffects();
+    }
+
+    private void DashWithEffects()
+    {
+        if (!player.Dash()) return;
+        Sfx.Play(Sound.Dash, transform.position);
+        Vfx.Dust(transform.position + Vector3.down * 0.4f, 0.6f);
     }
 
     private void Remember()

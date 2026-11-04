@@ -86,6 +86,10 @@ public static class ControlHints
         "Even the middle of the arena can fall, and the floor crumbles faster every 30 seconds.",
         "At 1:00 a new platform rises. Jump across before the old arena is gone.",
         "Blue, flashing floor on the new platform freezes into slippery ice. Steer gently!",
+        "STAPH IT!: knock rivals out of the dome just before the light turns red.",
+        "STAPH IT!: a shield blocks the red-light zap, so save one for when you can't make it to the dome.",
+        "BOMBA CLUTCH: bombs set off nearby bombs. Line up a chain for a big score.",
+        "BOMBA CLUTCH: with a shield up, blasts can't throw you, so set off as many bombs as you can.",
         "Lost track of your ball? An arrow at the screen edge points to it."
     };
 }

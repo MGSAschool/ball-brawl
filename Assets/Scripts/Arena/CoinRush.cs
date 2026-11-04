@@ -52,7 +52,8 @@ public class CoinRush : MonoBehaviour
 
     private void OnMatchStateChanged(MatchManager.MatchState state)
     {
-        matchRunning = state == MatchManager.MatchState.Playing;
+        // Coins are a Brawl event; the minigames have their own scoring
+        matchRunning = state == MatchManager.MatchState.Playing && match.Mode == GameMode.Brawl;
         if (matchRunning)
         {
             nextRushAt = Time.time + firstRushDelay;

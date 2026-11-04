@@ -13,10 +13,12 @@ using UnityEngine.UI;
 //             the inventory frame with their colour and 2 stored power-ups (icons come from the
 //             shared PowerupHUD prefab, so its logic stays in charge), plus points, coins and
 //             active effects
-//   centre  - lobby: logo, menu buttons (Play / How to Play / Leave) and one colour-coded join
-//             card per control scheme; match: timer, event banner, knock-off feed, countdown;
-//             results: winner title and name plates in the scoreboard frame, menu below.
-//             The How to Play card opens on request (button, H or gamepad Select)
+//   centre  - lobby: logo, menu buttons (Play / How to Play / Leave), game mode cards
+//             (Brawl / Staph It! / BombaClutch: click, 1-2-3 or gamepad LB/RB) and one
+//             colour-coded join card per control scheme; match: timer, event banner (Coin Rush,
+//             Staph It! lights with a screen tint), knock-off feed, countdown; results: winner
+//             title and name plates in the scoreboard frame, menu below.
+//             The How to Play card opens on request (button, H or gamepad Select), menus only
 //   bottom  - start / rematch prompt and the controls line
 // Resolution independent: the layout is designed at 1920x1080 and scaled in "Expand" mode,
 // so the whole layout is always on screen whatever the monitor size or shape. Text is
@@ -81,6 +83,37 @@ public class MatchHUD : MonoBehaviour
         }
     }
 
+    // Mode cards in the lobby, in GameMode order
+    private static readonly ModeInfo[] Modes =
+    {
+        new ModeInfo(GameMode.Brawl, "BRAWL", "Knock everyone off the arena", new Color(1f, 0.55f, 0.2f)),
+        new ModeInfo(GameMode.StaphIt, "STAPH IT!", "Red light? Be in the dome!", new Color(1f, 0.3f, 0.35f)),
+        new ModeInfo(GameMode.BombaClutch, "BOMBA CLUTCH", "Set off bombs, survive the blasts", new Color(0.55f, 0.45f, 1f))
+    };
+
+    private readonly struct ModeInfo
+    {
+        public readonly GameMode Mode;
+        public readonly string Title, Blurb;
+        public readonly Color Color;
+
+        public ModeInfo(GameMode mode, string title, string blurb, Color color)
+        {
+            Mode = mode;
+            Title = title;
+            Blurb = blurb;
+            Color = color;
+        }
+    }
+
+    private class ModeCard
+    {
+        public RectTransform Root;
+        public Image Background;
+        public Outline Outline;
+        public TextMeshProUGUI Text;
+    }
+
     private class PlayerCard
     {
         public TextMeshProUGUI Points, Coins, Status;
@@ -90,12 +123,16 @@ public class MatchHUD : MonoBehaviour
 
     private readonly Dictionary<MatchManager.PlayerEntry, PlayerCard> cards = new Dictionary<MatchManager.PlayerEntry, PlayerCard>();
     private readonly List<TextMeshProUGUI> joinTexts = new List<TextMeshProUGUI>();
+    private readonly List<ModeCard> modeCards = new List<ModeCard>();
+    private GameObject modePanel;
+    private Image signalTint;
 
     private GameArt art;
     private RectTransform safeArea;
     private Rect appliedSafeArea;
     private GameObject timerPanel;
     private GameObject eventPanel;
+    private Image eventIcon;
     private GameObject logo;
     private GameObject menu;
     private GameObject joinPanel;
@@ -154,8 +191,12 @@ public class MatchHUD : MonoBehaviour
         ApplySafeArea();
         if (match == null) return;
 
-        if (GuideTogglePressed()) guideOpen = !guideOpen;
+        // How to Play is only for the menus: during a match it would cover the arena for everyone,
+        // and only keyboard players can reach H, so it stays shut until the match is over
+        if (!InMenu) guideOpen = false;
+        else if (GuideTogglePressed()) ToggleGuide();
         if (InMenu && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) Leave();
+        if (InMenu) HandleModeKeys();
 
         bool lobby = match.State == MatchManager.MatchState.Lobby;
         bool over = match.State == MatchManager.MatchState.MatchOver;
@@ -177,13 +218,19 @@ public class MatchHUD : MonoBehaviour
         }
         joinPanel.SetActive(lobby && !guideOpen);
         if (joinPanel.activeSelf) UpdateJoinCards();
+        modePanel.SetActive(lobby && !guideOpen);
+        if (modePanel.activeSelf) UpdateModeCards();
         FadeWhenCovering(menu);
         FadeWhenCovering(joinPanel);
+        FadeWhenCovering(modePanel);
+        UpdateSignal();
 
         UpdatePlayerCards();
 
         string eventLabel = EventLabel();
         eventPanel.SetActive(eventLabel.Length > 0);
+        // The coin icon belongs to Coin Rush only
+        eventIcon.enabled = eventIcon.sprite != null && coinRush != null && coinRush.IsActive;
         eventText.text = eventLabel;
 
         // In the menus the logo and buttons fill the top and centre, so news goes above the prompt instead
@@ -204,12 +251,32 @@ public class MatchHUD : MonoBehaviour
         promptText.text = news + Prompt();
         if (guideOpen)
             controlsText.text = "Press <b>H</b> / <b>Select</b> or click the card to close How to Play";
-        else if (lobby)
-            controlsText.text = "Grab power-ups and practise while you wait     <b>H</b> / <b>Select:</b> How to Play     <b>Esc:</b> Leave";
+        else if (InMenu)
+            controlsText.text = "<b>1 / 2 / 3</b> or <b>LB / RB:</b> pick mode     <b>H</b> / <b>Select:</b> How to Play     <b>Esc:</b> Leave";
         else
             controlsText.text = "<b>WASD:</b> Space Jump | E Use power-up | LShift Dash     " +
                                 "<b>Arrows:</b> RCtrl | / | RShift     " +
-                                "<b>Gamepad:</b> A | B | X     <b>H</b> / <b>Select:</b> How to Play";
+                                "<b>Gamepad:</b> A | B | X";
+    }
+
+    // 1 / 2 / 3 pick a mode directly; gamepad shoulders step through them
+    private void HandleModeKeys()
+    {
+        var keyboard = Keyboard.current;
+        if (keyboard != null)
+        {
+            if (keyboard.digit1Key.wasPressedThisFrame || keyboard.numpad1Key.wasPressedThisFrame) match.SetMode(GameMode.Brawl);
+            else if (keyboard.digit2Key.wasPressedThisFrame || keyboard.numpad2Key.wasPressedThisFrame) match.SetMode(GameMode.StaphIt);
+            else if (keyboard.digit3Key.wasPressedThisFrame || keyboard.numpad3Key.wasPressedThisFrame) match.SetMode(GameMode.BombaClutch);
+        }
+        foreach (var gamepad in Gamepad.all)
+        {
+            int step = gamepad.rightShoulder.wasPressedThisFrame ? 1 : gamepad.leftShoulder.wasPressedThisFrame ? -1 : 0;
+            if (step == 0) continue;
+            int count = Modes.Length;
+            match.SetMode((GameMode)(((int)match.Mode + step + count) % count));
+            break;
+        }
     }
 
     private static bool GuideTogglePressed()
@@ -225,13 +292,19 @@ public class MatchHUD : MonoBehaviour
     // --- Menu buttons ---
     private void Play()
     {
+        Sfx.Play(Sound.Click);
         if (!match.TryStartMatch())
         {
             match.Announce($"Need {match.MinPlayersToStart}+ players to start - join with SPACE, RSHIFT or A");
         }
     }
 
-    private void ToggleGuide() => guideOpen = !guideOpen;
+    private void ToggleGuide()
+    {
+        if (!InMenu) return;
+        guideOpen = !guideOpen;
+        Sfx.Play(Sound.Click);
+    }
 
     private static void Leave()
     {
@@ -253,7 +326,7 @@ public class MatchHUD : MonoBehaviour
         }
         else
         {
-            Place(rect, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 110f), new Vector2(820f, 200f));
+            Place(rect, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 170f), new Vector2(820f, 200f));
             rect.localScale = Vector3.one;
         }
     }
@@ -290,8 +363,22 @@ public class MatchHUD : MonoBehaviour
     private string Guide()
     {
         sb.Clear();
-        sb.Append("<align=center>Knock rivals off the arena. Most points when the 3 minutes run out wins.\n");
-        sb.Append("<color=#9cff7a>+1</color> knock-off     <color=#FFD64D>+1</color> coin     <color=#ff6b6b>-1</color> falling off on your own</align>\n\n");
+        sb.Append($"<align=center><color=#FFD64D>{MatchManager.ModeName(match.Mode)}:</color> ");
+        switch (match.Mode)
+        {
+            case GameMode.StaphIt:
+                sb.Append("When the light turns <color=#ff6b6b>RED</color>, be inside the glowing dome. It moves every round and shrinks.\n");
+                sb.Append("<color=#9cff7a>+1</color> inside when red ends     <color=#ff6b6b>-1</color> caught outside (a shield blocks it)     <color=#9cff7a>+1</color> knock-off</align>\n\n");
+                break;
+            case GameMode.BombaClutch:
+                sb.Append("Roll into bombs to set them off - but the blast throws you too. Blasts chain into nearby bombs.\n");
+                sb.Append("<color=#9cff7a>+1</color> every bomb you set off     <color=#ff6b6b>-1</color> falling off on your own</align>\n\n");
+                break;
+            default:
+                sb.Append("Knock rivals off the arena. Most points when time runs out wins.\n");
+                sb.Append("<color=#9cff7a>+1</color> knock-off     <color=#FFD64D>+1</color> coin     <color=#ff6b6b>-1</color> falling off on your own</align>\n\n");
+                break;
+        }
 
         sb.Append("<align=left><color=#FFD64D>ACTION<pos=34%>WASD<pos=56%>ARROWS<pos=79%>GAMEPAD</color>\n");
         GuideRow("Move", ControlHints.Action.Move);
@@ -321,7 +408,10 @@ public class MatchHUD : MonoBehaviour
         {
             case MatchManager.MatchState.Lobby: return "LOBBY";
             case MatchManager.MatchState.Countdown: return "GET READY";
-            case MatchManager.MatchState.Playing: return FormatTime(match.TimeRemaining);
+            case MatchManager.MatchState.Playing:
+                return match.Mode == GameMode.Brawl
+                    ? FormatTime(match.TimeRemaining)
+                    : $"<size=40%>{MatchManager.ModeName(match.Mode)}</size>\n{FormatTime(match.TimeRemaining)}";
             default: return "TIME!";
         }
     }
@@ -345,6 +435,19 @@ public class MatchHUD : MonoBehaviour
 
     private string EventLabel()
     {
+        var staph = StaphItMode.Active;
+        if (staph != null && staph.Light != StaphItMode.Signal.Off)
+        {
+            int left = Mathf.CeilToInt(staph.PhaseRemaining);
+            switch (staph.Light)
+            {
+                case StaphItMode.Signal.Red: return $"RED LIGHT - STAPH IT!  <size=80%>{left}s</size>";
+                case StaphItMode.Signal.Yellow: return $"YELLOW - GET IN THE DOME!  <size=80%>{left}s</size>";
+                default: return $"GREEN LIGHT  <size=80%>{left}s</size>";
+            }
+        }
+        if (match.Mode == GameMode.BombaClutch && match.State == MatchManager.MatchState.Playing)
+            return "BOMBA CLUTCH  <size=80%>set off bombs: +1 each</size>";
         if (coinRush != null && coinRush.IsActive)
         {
             return $"<color=#{Hex(CoinColor)}>COIN RUSH</color>  {Mathf.CeilToInt(coinRush.TimeRemaining)}s  -  {coinRush.CoinsLeft} coins left";
@@ -365,6 +468,9 @@ public class MatchHUD : MonoBehaviour
             join = $"More controllers: press <color=#{Hex(JoinSchemes[2].Color)}>A</color> to join\n";
         else
             join = "";
+        // On the results screen the mode cards are hidden, so say which mode a rematch plays
+        if (match.State == MatchManager.MatchState.MatchOver)
+            join += $"Mode: <color=#FFD64D>{MatchManager.ModeName(match.Mode)}</color>  <size=80%>(1 / 2 / 3 or LB / RB to change)</size>\n";
         if (match.CanStart)
             return $"{join}Press <b>ENTER</b> / <b>START</b> to {(match.State == MatchManager.MatchState.Lobby ? "start" : "rematch")}";
         if (match.Players.Count < match.MinPlayersToStart)
@@ -676,7 +782,7 @@ public class MatchHUD : MonoBehaviour
         eventPanel = CreatePanel("Event Panel", new Vector2(0.385f, 1f), new Vector2(0.615f, 1f), new Vector2(0.5f, 1f),
             new Vector2(0f, -132f), new Vector2(0f, 60f));
         AddTrim(eventPanel);
-        AddIcon(eventPanel.transform, art != null ? art.coinIcon : null, Rect.MinMaxRect(0.01f, 0.08f, 0.1f, 0.92f));
+        eventIcon = AddIcon(eventPanel.transform, art != null ? art.coinIcon : null, Rect.MinMaxRect(0.01f, 0.08f, 0.1f, 0.92f));
         eventText = CreateText(eventPanel.transform, "Event", 16f, 34f, TextAlignmentOptions.Center, 8f);
         eventText.rectTransform.offsetMin = new Vector2(48f, 8f);
 
@@ -691,7 +797,9 @@ public class MatchHUD : MonoBehaviour
 
         BuildResultsPanel();
         BuildMenu();
+        BuildModePanel();
         BuildJoinPanel();
+        BuildSignalTint();
 
         // How to Play card, centred under the logo; clicking it closes it
         guidePanel = CreatePanel("Guide Panel", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
@@ -758,12 +866,114 @@ public class MatchHUD : MonoBehaviour
         leaveLabel.text = "LEAVE  <size=70%>(Esc)";
     }
 
+    // Lobby: one clickable card per game mode, between the menu buttons and the join cards
+    private void BuildModePanel()
+    {
+        modePanel = new GameObject("Modes", typeof(RectTransform));
+        modePanel.transform.SetParent(safeArea, false);
+        Place((RectTransform)modePanel.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -20f), new Vector2(1140f, 130f));
+
+        float width = 1f / Modes.Length;
+        for (int i = 0; i < Modes.Length; i++)
+        {
+            var info = Modes[i];
+            var root = new GameObject($"{info.Title} Mode", typeof(RectTransform)).GetComponent<RectTransform>();
+            root.SetParent(modePanel.transform, false);
+            Anchor(root, Rect.MinMaxRect(i * width + 0.015f, 0f, (i + 1) * width - 0.015f, 1f));
+
+            var go = new GameObject("Card", typeof(RectTransform), typeof(Image), typeof(Button));
+            go.transform.SetParent(root, false);
+            var background = go.GetComponent<Image>();
+            Anchor(background.rectTransform, Rect.MinMaxRect(0f, 0f, 1f, 1f));
+            var outline = go.AddComponent<Outline>();
+            outline.effectDistance = new Vector2(4f, -4f);
+            var mode = info.Mode;
+            go.GetComponent<Button>().onClick.AddListener(() => match.SetMode(mode));
+
+            var text = CreateText(background.rectTransform, "Text", 12f, 34f, TextAlignmentOptions.Center, 8f);
+            modeCards.Add(new ModeCard { Root = root, Background = background, Outline = outline, Text = text });
+        }
+    }
+
+    private void UpdateModeCards()
+    {
+        for (int i = 0; i < modeCards.Count; i++)
+        {
+            var info = Modes[i];
+            var card = modeCards[i];
+            bool selected = match.Mode == info.Mode;
+            // The picked mode is lit in its colour and a bit bigger; the others sit back
+            card.Background.color = selected ? Color.Lerp(PanelColor, info.Color, 0.55f) : PanelColor;
+            card.Outline.effectColor = selected ? GoldColor : new Color(info.Color.r, info.Color.g, info.Color.b, 0.6f);
+            float scale = Mathf.Lerp(card.Root.localScale.x, selected ? 1.06f : 0.94f, 1f - Mathf.Exp(-12f * Time.unscaledDeltaTime));
+            card.Root.localScale = Vector3.one * scale;
+            string key = (i + 1).ToString();
+            card.Text.text = $"<color=#{(selected ? "FFD64D" : Hex(info.Color))}>{info.Title}</color>  <size=60%>[{key}]</size>\n" +
+                             $"<size=65%><color=#{(selected ? "FFFFFF" : "d8d0ff")}>{info.Blurb}</color></size>";
+        }
+    }
+
+    // Full-screen colour wash for Staph It! lights: a red throb on red, a yellow flicker on yellow.
+    // Also colours the event banner with the light.
+    private void BuildSignalTint()
+    {
+        signalTint = new GameObject("Signal Tint", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+        signalTint.rectTransform.SetParent(safeArea, false);
+        signalTint.rectTransform.SetAsFirstSibling();
+        Anchor(signalTint.rectTransform, Rect.MinMaxRect(0f, 0f, 1f, 1f));
+        signalTint.raycastTarget = false;
+        // Clear in the middle, coloured toward the edges
+        const int size = 64;
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+        var pixels = new Color32[size * size];
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = (x + 0.5f) / size * 2f - 1f, dy = (y + 0.5f) / size * 2f - 1f;
+                float r = Mathf.Clamp01(Mathf.Sqrt(dx * dx + dy * dy) / 1.414f);
+                pixels[y * size + x] = new Color32(255, 255, 255, (byte)(Mathf.SmoothStep(0.35f, 1f, r) * 255f));
+            }
+        }
+        tex.SetPixels32(pixels);
+        tex.Apply();
+        signalTint.sprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
+        signalTint.color = Color.clear;
+    }
+
+    private void UpdateSignal()
+    {
+        var staph = StaphItMode.Active;
+        var light = staph != null ? staph.Light : StaphItMode.Signal.Off;
+        var eventImage = eventPanel.GetComponent<Image>();
+        float t = Time.time;
+
+        Color tint = Color.clear;
+        if (light == StaphItMode.Signal.Red) tint = new Color(1f, 0.1f, 0.1f, Mathf.Lerp(0.18f, 0.32f, 0.5f + 0.5f * Mathf.Sin(t * 10f)));
+        else if (light == StaphItMode.Signal.Yellow) tint = new Color(1f, 0.8f, 0.1f, Mathf.PingPong(t * 3f, 0.22f));
+        signalTint.color = Color.Lerp(signalTint.color, tint, 1f - Mathf.Exp(-12f * Time.deltaTime));
+
+        if (light != StaphItMode.Signal.Off)
+        {
+            Color c = staph.SignalColor;
+            eventImage.color = new Color(c.r * 0.55f, c.g * 0.55f, c.b * 0.55f, 0.95f);
+            // Red light shouts: the banner swells
+            float swell = light == StaphItMode.Signal.Red ? 1.15f + 0.05f * Mathf.Sin(t * 10f) : 1f;
+            eventPanel.transform.localScale = Vector3.one * swell;
+        }
+        else
+        {
+            eventImage.color = PanelColor;
+            eventPanel.transform.localScale = Vector3.one;
+        }
+    }
+
     // Lobby: a card per control scheme in its own colour, saying which key joins (hidden once used)
     private void BuildJoinPanel()
     {
         joinPanel = new GameObject("Join", typeof(RectTransform));
         joinPanel.transform.SetParent(safeArea, false);
-        Place((RectTransform)joinPanel.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -125f), new Vector2(1140f, 170f));
+        Place((RectTransform)joinPanel.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -200f), new Vector2(1140f, 170f));
 
         float width = 1f / JoinSchemes.Length;
         for (int i = 0; i < JoinSchemes.Length; i++)

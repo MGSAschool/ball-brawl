@@ -21,6 +21,19 @@ public class Bomb : MonoBehaviour
     private BombaClutchMinigame gameManager;
     private BrawlPlayer triggeredByPlayer;
 
+    // Raised just before any bomb blows up, with whoever set it off (used by BombaClutchMode)
+    public static event System.Action<Bomb, BrawlPlayer> Detonated;
+    public bool IsPrimed => isTriggered;
+    public float ExplosionRadius => explosionRadius;
+
+    // Sets the bomb off on behalf of a player (chain reactions)
+    public void Prime(BrawlPlayer by)
+    {
+        if (isTriggered) return;
+        triggeredByPlayer = by;
+        StartCoroutine(DetonationSequence());
+    }
+
     public void Initialize(BombaClutchMinigame manager, float fuseModifier = 1f, float forceModifier = 1f)
     {
         gameManager = manager;
@@ -56,6 +69,8 @@ public class Bomb : MonoBehaviour
 
     private void Explode()
     {
+        Detonated?.Invoke(this, triggeredByPlayer);
+
         // Award points to whoever primed this bomb
         if (gameManager != null && triggeredByPlayer != null)
         {
@@ -79,7 +94,12 @@ public class Bomb : MonoBehaviour
             blastDir.Normalize();
 
             IKnockable knockable = targetObj.GetComponentInParent<IKnockable>();
-            if (knockable != null)
+            if (knockable is BrawlPlayer brawler)
+            {
+                // Credit whoever set the bomb off, so a blast-off isn't counted as falling on your own
+                brawler.ApplyKnockback(blastDir, explosionForce, triggeredByPlayer);
+            }
+            else if (knockable != null)
             {
                 knockable.ApplyKnockback(blastDir, explosionForce);
             }
