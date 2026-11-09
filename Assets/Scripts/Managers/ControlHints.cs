@@ -2,7 +2,7 @@
 // Keep in sync with PlayerInputSystem.inputactions.
 public static class ControlHints
 {
-    public enum Action { Move, Jump, Dash, Invulnerability, SuperKnockback }
+    public enum Action { Move, Jump, UsePowerUp, Dash }
 
     public static readonly string[] Schemes = { "Keyboard", "Arrows", "Gamepad" };
 
@@ -25,40 +25,25 @@ public static class ControlHints
                 {
                     case Action.Move: return "W A S D";
                     case Action.Jump: return "Space";
-                    case Action.Dash: return "Left Shift";
-                    case Action.Invulnerability: return "Q";
-                    default: return "E";
+                    case Action.UsePowerUp: return "E";
+                    default: return "Left Shift";
                 }
             case "Arrows":
                 switch (action)
                 {
                     case Action.Move: return "Arrow keys";
                     case Action.Jump: return "Right Ctrl";
-                    case Action.Dash: return "Right Shift";
-                    case Action.Invulnerability: return ". (period)";
-                    default: return "/ (slash)";
+                    case Action.UsePowerUp: return "/ (slash)";
+                    default: return "Right Shift";
                 }
             default:
                 switch (action)
                 {
                     case Action.Move: return "Left stick";
                     case Action.Jump: return "A";
-                    case Action.Dash: return "X";
-                    case Action.Invulnerability: return "Y";
-                    default: return "B";
+                    case Action.UsePowerUp: return "B";
+                    default: return "X";
                 }
-        }
-    }
-
-    // The key that fires a stored power-up, or null for ones that apply on pickup
-    public static string KeyFor(string scheme, PowerUpModifier powerUp)
-    {
-        switch (powerUp)
-        {
-            case DashPowerUp: return Key(scheme, Action.Dash);
-            case InvulnerablePowerUp: return Key(scheme, Action.Invulnerability);
-            case SuperKnockbackPowerUp: return Key(scheme, Action.SuperKnockback);
-            default: return null;
         }
     }
 
@@ -91,16 +76,20 @@ public static class ControlHints
         "Jump to hop over a player charging at you.",
         "Save Invulnerability for when you're about to be hit near the edge.",
         "Super Knockback lasts 10 seconds. Level III hits three times as hard as level I.",
-        "A Dash power-up gives you a window of dashing (longer at higher levels). Tap it again to dash after the cooldown.",
+        "Using a Dash power-up gives you a window of dashing (longer at higher levels). Press Dash to dash again after the cooldown.",
         "Power-ups come in levels I to III. Bigger, brighter pickups with more sparks around them are stronger.",
         "Dash back toward the middle if you get knocked close to the edge.",
         "Red, shaking floor is about to drop. Get off it!",
         "Coin Rush coins land near the edges. Big points, big risk.",
-        "You can hold 2 power-ups. A full inventory leaves new pickups on the floor.",
+        "You hold 2 power-ups. Use fires the left (oldest) one, and a third pickup pushes the oldest out.",
+        "Plan your order: grab the power-up you want to use next first.",
         "Even the middle of the arena can fall, and the floor crumbles faster every 30 seconds.",
         "At 1:00 a new platform rises. Jump across before the old arena is gone.",
         "Blue, flashing floor on the new platform freezes into slippery ice. Steer gently!",
-        "Lost track of your ball? An arrow at the screen edge points to it.",
-        "Speed Boosts work the moment you grab them."
+        "STAPH IT!: knock rivals out of the dome just before the light turns red.",
+        "STAPH IT!: a shield blocks the red-light zap, so save one for when you can't make it to the dome.",
+        "BOMBA CLUTCH: bombs set off nearby bombs. Line up a chain for a big score.",
+        "BOMBA CLUTCH: with a shield up, blasts can't throw you, so set off as many bombs as you can.",
+        "Lost track of your ball? An arrow at the screen edge points to it."
     };
 }

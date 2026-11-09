@@ -102,6 +102,8 @@ public class FallingPlatforms : MonoBehaviour
     private Transform[] islandSpawns;
     private PhysicsMaterial iceMaterial;
     private bool active;
+    // Permanent falls and the island are the Brawl finale; minigames keep the normal crumbling
+    private bool finalPhases = true;
     private bool explainedFalls;
     private bool explainedIce;
     private float matchStartTime;
@@ -143,6 +145,7 @@ public class FallingPlatforms : MonoBehaviour
         {
             matchStartTime = Time.time;
             nextFallTime = Time.time + firstFallDelay;
+            finalPhases = match.Mode == GameMode.Brawl;
             speedLevel = 0;
             explainedFalls = false;
             explainedIce = false;
@@ -166,8 +169,8 @@ public class FallingPlatforms : MonoBehaviour
             if (phase != Phase.Island && timeLeft > islandAppearsAt + 1f) match.Announce("The floor is crumbling faster!");
         }
 
-        if (phase == Phase.Normal && timeLeft <= permanentFallsAt) EnterPermanentPhase();
-        if (phase == Phase.Permanent && timeLeft <= islandAppearsAt) RaiseIsland();
+        if (finalPhases && phase == Phase.Normal && timeLeft <= permanentFallsAt) EnterPermanentPhase();
+        if (finalPhases && phase == Phase.Permanent && timeLeft <= islandAppearsAt) RaiseIsland();
 
         if (phase == Phase.Island && Time.time >= nextFreezeTime)
         {

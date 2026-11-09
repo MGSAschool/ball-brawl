@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Gives each power-up pickup its own shape and colour so players can tell them apart at a glance:
-//   Dash = double arrow, Invulnerability = shield bubble with a halo,
-//   Super Knockback = spiky star, Speed Boost = wheel.
+// Gives each power-up pickup its own shape so players can tell them apart at a glance. Uses the
+// models from GameArt (Dash = lightning bolt, Invulnerability = shield, Super Knockback = boxing
+// glove); without art it falls back to simple shapes (Speed Boost is always a green wheel).
 // The level (1-3) makes it bigger, glow brighter and adds one orbiting spark per level.
 // Added by PowerUpSpawner; replaces the pickup's own mesh with the shape.
 [RequireComponent(typeof(PowerUpPickUp))]
@@ -75,8 +75,31 @@ public class PowerUpVisual : MonoBehaviour
         foreach (var m in materials) Destroy(m);
     }
 
+    // Imported model for this power-up, if the art has one
+    private static GameObject ModelFor(PowerUpModifier powerUp)
+    {
+        var art = GameArt.Instance;
+        if (art == null) return null;
+        switch (powerUp)
+        {
+            case DashPowerUp: return art.dashModel;
+            case InvulnerablePowerUp: return art.invulnerabilityModel;
+            case SuperKnockbackPowerUp: return art.superKnockbackModel;
+            default: return null;
+        }
+    }
+
     private void BuildShape(PowerUpModifier powerUp, Material material)
     {
+        var model = ModelFor(powerUp);
+        if (model != null)
+        {
+            // Fit in world units, so multiply by the level scale already on `body`
+            var fitted = ArtUtil.FitModel(model, body, 0.95f * body.lossyScale.x);
+            foreach (var r in fitted.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            return;
+        }
+
         switch (powerUp)
         {
             case DashPowerUp:

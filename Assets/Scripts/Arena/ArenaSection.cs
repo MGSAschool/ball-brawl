@@ -84,6 +84,7 @@ public class ArenaSection : MonoBehaviour
         riseDuration = rise;
         fallDistance = distance;
         Enter(SectionState.Warning);
+        Sfx.Play(Sound.Rumble, transform.position, 0.6f);
     }
 
     // Moves the spot this section rests at (used to place the island on a new side each match)
@@ -166,6 +167,7 @@ public class ArenaSection : MonoBehaviour
             {
                 Freeze = FreezeState.Frozen;
                 freezeStart = Time.time;
+                Sfx.Play(Sound.Freeze, transform.position, 0.6f);
                 col.sharedMaterial = iceMaterial;
                 SetColor(iceColor);
             }
@@ -210,6 +212,8 @@ public class ArenaSection : MonoBehaviour
                 {
                     SetColor(warningColor);
                     Enter(SectionState.Falling);
+                    Sfx.Play(Sound.Crumble, transform.position, 0.6f);
+                    Vfx.Dust(rend.bounds.center + Vector3.up * (rend.bounds.extents.y), 1f);
                 }
                 break;
             }

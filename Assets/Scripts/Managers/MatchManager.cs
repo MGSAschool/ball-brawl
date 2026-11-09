@@ -4,8 +4,13 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Core Ball Brawl loop: Lobby (join + free roam) -> Countdown -> timed match -> Results.
-// Knocking an opponent off the platform scores for whoever hit them last.
+// Brawl: knock-offs score. Staph It!: survive red lights in the safe dome (StaphItMode).
+// BombaClutch: set off bombs (BombaClutchMode). All share the arena, power-ups and falls.
+public enum GameMode { Brawl, StaphIt, BombaClutch }
+
+// Core Ball Brawl loop: Lobby (join + free roam, pick a mode) -> Countdown -> timed match -> Results.
+// Knocking an opponent off the platform scores for whoever hit them last (except in BombaClutch,
+// where points come from bombs).
 public class MatchManager : MonoBehaviour
 {
     public enum MatchState { Lobby, Countdown, Playing, MatchOver }
@@ -13,7 +18,7 @@ public class MatchManager : MonoBehaviour
     public class PlayerEntry
     {
         public BrawlPlayer Player;
-        public PlayerInventory Inventory;
+        public BrawlPowerUps PowerUps;
         public string Name;
         public Color Color;
         public int Score;
@@ -31,6 +36,7 @@ public class MatchManager : MonoBehaviour
 
     // Fired after every state change; arena events use it to start, stop and reset
     public event Action<MatchState> StateChanged;
+    public event Action<GameMode> ModeChanged;
 
     [Header("Players")]
     [SerializeField] private GameObject playerPrefab;
@@ -42,11 +48,13 @@ public class MatchManager : MonoBehaviour
         new Color(0.95f, 0.30f, 0.30f),
         new Color(0.30f, 0.55f, 0.95f),
         new Color(0.35f, 0.85f, 0.40f),
-        new Color(0.98f, 0.80f, 0.25f)
+        new Color(1.00f, 0.60f, 0.20f)
     };
 
     [Header("Match Rules")]
     [SerializeField] private float matchDuration = 180f;
+    [Tooltip("Length of a Staph It! or BombaClutch round.")]
+    [SerializeField] private float minigameDuration = 120f;
     [SerializeField] private float countdownDuration = 3f;
     [SerializeField] private float respawnDelay = 3f;
     [SerializeField] private float spawnProtection = 1.5f;
@@ -65,6 +73,8 @@ public class MatchManager : MonoBehaviour
     public MatchState State { get; private set; } = MatchState.Lobby;
     public float TimeRemaining { get; private set; }
     public float CountdownRemaining { get; private set; }
+    public GameMode Mode { get; private set; } = GameMode.Brawl;
+    public float Duration => Mode == GameMode.Brawl ? matchDuration : minigameDuration;
     public IReadOnlyList<PlayerEntry> Players => players;
     public IReadOnlyList<PlayerEntry> Winners => winners;
     public int MinPlayersToStart => minPlayersToStart;
@@ -97,7 +107,9 @@ public class MatchManager : MonoBehaviour
 
     private void Start()
     {
-        if (powerUpSpawner != null) powerUpSpawner.enabled = false;
+        // Power-ups keep dropping in the lobby so players can try them while they wait;
+        // the countdown clears them so the match starts fresh
+        if (powerUpSpawner != null) powerUpSpawner.enabled = true;
         Announce("Join in, then press ENTER / START to brawl!");
     }
 
@@ -112,8 +124,12 @@ public class MatchManager : MonoBehaviour
         switch (State)
         {
             case MatchState.Countdown:
+            {
+                int before = Mathf.CeilToInt(CountdownRemaining);
                 CountdownRemaining -= Time.deltaTime;
                 if (CountdownRemaining <= 0f) BeginMatch();
+                else if (Mathf.CeilToInt(CountdownRemaining) < before) Sfx.Play(Sound.Countdown);
+            }
                 break;
 
             case MatchState.Playing:
@@ -167,23 +183,30 @@ public class MatchManager : MonoBehaviour
         var entry = new PlayerEntry
         {
             Player = player,
-            Inventory = input.GetComponent<PlayerInventory>(),
+            PowerUps = input.GetComponent<BrawlPowerUps>(),
             Name = $"P{index + 1}",
             Color = playerColors.Length > 0 ? playerColors[index % playerColors.Length] : Color.white,
             ControlScheme = controlScheme
         };
         input.gameObject.name = $"Player {index + 1} ({controlScheme})";
         players.Add(entry);
-        if (entry.Inventory != null) entry.Inventory.Collected += powerUp => ShowPowerUpHint(entry, powerUp);
+        if (entry.PowerUps != null) entry.PowerUps.Collected += powerUp => ShowPowerUpHint(entry, powerUp);
 
-        foreach (var rend in input.GetComponentsInChildren<Renderer>())
+        // Character ball for this slot; plain tint when no skin art is set up
+        bool skinned = input.TryGetComponent<BallSkin>(out var skin) && skin.Apply(index, entry.Color);
+        if (!skinned)
         {
-            rend.material.color = entry.Color;
+            foreach (var rend in input.GetComponentsInChildren<Renderer>())
+            {
+                rend.material.color = entry.Color;
+            }
         }
 
         DisablePlayerCameras(input.gameObject);
         PlaceAtSpawn(entry, GetSpawnPosition(index));
         Announce($"{entry.Name} joined ({controlScheme})");
+        Sfx.Play(Sound.Join);
+        Vfx.Poof(player.transform.position, entry.Color);
         return true;
     }
 
@@ -193,10 +216,8 @@ public class MatchManager : MonoBehaviour
         if (!entry.HintedPowerUps.Add(powerUp.GetType())) return;
 
         string name = ControlHints.PowerUpName(powerUp);
-        string key = ControlHints.KeyFor(entry.ControlScheme, powerUp);
-        Announce(key != null
-            ? $"{entry.Name}: {name} stored - press {key} to use it"
-            : $"{entry.Name}: {name}!");
+        string key = ControlHints.Key(entry.ControlScheme, ControlHints.Action.UsePowerUp);
+        Announce($"{entry.Name}: {name} stored - {key} uses your oldest power-up");
     }
 
     // The arena uses one shared camera, so per-player cameras on the prefab are switched off
@@ -223,6 +244,14 @@ public class MatchManager : MonoBehaviour
     }
 
     // --- Match flow ---
+    // For menu buttons: same as pressing ENTER / START
+    public bool TryStartMatch()
+    {
+        if (!CanStart) return false;
+        StartCountdown();
+        return true;
+    }
+
     private void StartCountdown()
     {
         SetState(MatchState.Countdown);
@@ -243,22 +272,47 @@ public class MatchManager : MonoBehaviour
             entry.Falls = 0;
             entry.Coins = 0;
             entry.IsRespawning = false;
-            if (entry.Inventory != null) entry.Inventory.Clear();
+            if (entry.PowerUps != null) entry.PowerUps.Clear();
             PlaceAtSpawn(entry, GetSpawnPosition(i));
         }
         Announce("Get ready...");
+        Sfx.Play(Sound.Countdown);
     }
 
     private void BeginMatch()
     {
+        // Timer first: modes read it when they hear the match start
+        TimeRemaining = Duration;
         SetState(MatchState.Playing);
-        TimeRemaining = matchDuration;
         foreach (var entry in players)
         {
             if (!entry.IsRespawning) entry.Player.ControlsEnabled = true;
         }
         if (powerUpSpawner != null) powerUpSpawner.enabled = true;
-        Announce("BRAWL!");
+        Announce(ModeName(Mode) + "!");
+        Sfx.Play(Sound.Go);
+    }
+
+    // --- Game modes ---
+    public static string ModeName(GameMode mode)
+    {
+        switch (mode)
+        {
+            case GameMode.StaphIt: return "STAPH IT";
+            case GameMode.BombaClutch: return "BOMBA CLUTCH";
+            default: return "BRAWL";
+        }
+    }
+
+    // Only between matches (lobby or results)
+    public bool SetMode(GameMode mode)
+    {
+        if (State != MatchState.Lobby && State != MatchState.MatchOver) return false;
+        if (mode == Mode) return true;
+        Mode = mode;
+        ModeChanged?.Invoke(mode);
+        Sfx.Play(Sound.Select);
+        return true;
     }
 
     private void EndMatch()
@@ -278,6 +332,12 @@ public class MatchManager : MonoBehaviour
         }
 
         Announce(winners.Count == 1 ? $"{winners[0].Name} wins!" : "It's a draw!");
+        Sfx.Play(Sound.Whistle);
+        Sfx.Play(Sound.Win, 0.9f);
+        foreach (var winner in winners)
+        {
+            if (winner.Player != null && !winner.IsRespawning) Vfx.Confetti(winner.Player.transform.position);
+        }
     }
 
     private void SetState(MatchState newState)
@@ -294,14 +354,31 @@ public class MatchManager : MonoBehaviour
 
         entry.Coins += amount;
         entry.Score += amount;
+        Sfx.Play(Sound.Coin, player.transform.position);
+        Vfx.Sparkle(player.transform.position, new Color(1f, 0.84f, 0.3f), 10);
         return true;
     }
+
+    // Minigame scoring (bombs, surviving a red light, getting caught). Counts while respawning too:
+    // a bomb can launch the ball that set it off.
+    public bool AwardPoints(BrawlPlayer player, int amount)
+    {
+        var entry = FindEntry(player);
+        if (entry == null || State != MatchState.Playing) return false;
+        entry.Score += amount;
+        return true;
+    }
+
+    public PlayerEntry EntryFor(BrawlPlayer player) => FindEntry(player);
 
     // --- Knock-offs & respawning ---
     public void HandlePlayerFell(BrawlPlayer player)
     {
         var entry = FindEntry(player);
         if (entry == null || entry.IsRespawning) return;
+
+        Sfx.Play(Sound.Fall, player.transform.position, 0.8f);
+        Vfx.KnockOutFlare(new Vector3(player.transform.position.x, Mathf.Max(player.transform.position.y, -3f), player.transform.position.z), entry.Color);
 
         if (State == MatchState.Playing)
         {
@@ -311,8 +388,13 @@ public class MatchManager : MonoBehaviour
 
             if (credited)
             {
-                attacker.Score++;
                 attacker.Knockouts++;
+                // BombaClutch scores bombs, not knock-offs; being blasted off still costs nothing
+                if (Mode != GameMode.BombaClutch)
+                {
+                    attacker.Score++;
+                    Sfx.Play(Sound.KnockOff, 0.8f);
+                }
                 Announce($"{attacker.Name} knocked off {entry.Name}!");
             }
             else
@@ -340,6 +422,8 @@ public class MatchManager : MonoBehaviour
                     entry.IsRespawning = false;
                     PlaceAtSpawn(entry, GetSafestSpawnPosition(entry));
                     if (State == MatchState.Playing) entry.Player.GrantInvulnerability(spawnProtection);
+                    Sfx.Play(Sound.Respawn, entry.Player.transform.position, 0.7f);
+                    Vfx.Poof(entry.Player.transform.position, entry.Color);
                 }
             }
             else if (entry.Player.transform.position.y < fallHeight)
