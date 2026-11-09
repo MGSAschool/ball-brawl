@@ -60,6 +60,9 @@ public class MatchHUD : MonoBehaviour
     private const float CardFrameHeight = 165f;
     private const float CardStripHeight = 56f;
     private const float CardGap = 8f;
+    // Lobby side columns: modes on the left, join cards on the right, mirrored
+    private const float SideCardHeight = 130f;
+    private const float SideColumnWidth = 360f;
 
     // Join cards, one per control scheme, each with its own colour (keys match MatchManager)
     private static readonly JoinScheme[] JoinSchemes =
@@ -117,12 +120,15 @@ public class MatchHUD : MonoBehaviour
     private class PlayerCard
     {
         public TextMeshProUGUI Points, Coins, Status;
-        public TextMeshProUGUI[] Badges = new TextMeshProUGUI[0];
+        // Per power-up slot: the copies drawn behind its icon (level 2 shows 1 extra, level 3 shows 2)
+        public Image[][] Stacks = new Image[0][];
+        public Rect[] SlotRects = new Rect[0];
         public PowerupInventoryUI Box;
     }
 
     private readonly Dictionary<MatchManager.PlayerEntry, PlayerCard> cards = new Dictionary<MatchManager.PlayerEntry, PlayerCard>();
     private readonly List<TextMeshProUGUI> joinTexts = new List<TextMeshProUGUI>();
+    private readonly List<Image> joinCards = new List<Image>();
     private readonly List<ModeCard> modeCards = new List<ModeCard>();
     private GameObject modePanel;
     private Image signalTint;
@@ -149,7 +155,7 @@ public class MatchHUD : MonoBehaviour
     private TextMeshProUGUI promptText;
     private TextMeshProUGUI controlsText;
     private GameObject guidePanel;
-    private TextMeshProUGUI guideText;
+    private TextMeshProUGUI guideGoal;
     private bool guideOpen;
     private int tipOffset;
     private readonly StringBuilder sb = new StringBuilder();
@@ -191,6 +197,12 @@ public class MatchHUD : MonoBehaviour
         ApplySafeArea();
         if (match == null) return;
 
+        // The menus are mouse-clickable, but keys and pads drive them through their own hotkeys.
+        // A clicked button would otherwise stay selected and gamepad A / Space / Enter (which also
+        // join, jump and start) would press it again.
+        var events = EventSystem.current;
+        if (events != null && events.currentSelectedGameObject != null) events.SetSelectedGameObject(null);
+
         // How to Play is only for the menus: during a match it would cover the arena for everyone,
         // and only keyboard players can reach H, so it stays shut until the match is over
         if (!InMenu) guideOpen = false;
@@ -202,9 +214,10 @@ public class MatchHUD : MonoBehaviour
         bool over = match.State == MatchManager.MatchState.MatchOver;
 
         guidePanel.SetActive(guideOpen);
-        if (guideOpen) guideText.text = Guide();
+        if (guideOpen) guideGoal.text = GuideGoal();
 
-        logo.SetActive(lobby);
+        // The guide card has its own title art, so the logo makes room for it
+        logo.SetActive(lobby && !guideOpen);
         timerPanel.SetActive(!lobby);
         timerText.text = TimerLabel();
 
@@ -248,15 +261,31 @@ public class MatchHUD : MonoBehaviour
             resultsText.text = $"<color=#FFD64D>TIP:</color> {CurrentTip()}";
         }
 
-        promptText.text = news + Prompt();
+        // While the guide is open everything it needs is inside the card
+        promptText.text = guideOpen ? "" : news + Prompt();
         if (guideOpen)
-            controlsText.text = "Press <b>H</b> / <b>Select</b> or click the card to close How to Play";
+            controlsText.text = "";
         else if (InMenu)
-            controlsText.text = "<b>1 / 2 / 3</b> or <b>LB / RB:</b> pick mode     <b>H</b> / <b>Select:</b> How to Play     <b>Esc:</b> Leave";
+            controlsText.text = $"Mode {ControlHints.Cap("1")} {ControlHints.Cap("2")} {ControlHints.Cap("3")} / {ControlHints.Cap("LB")} {ControlHints.Cap("RB")}" +
+                                $"      How to Play {ControlHints.Cap("H")} / {ControlHints.Cap("Select")}      Leave {ControlHints.Cap("Esc")}";
         else
-            controlsText.text = "<b>WASD:</b> Space Jump | E Use power-up | LShift Dash     " +
-                                "<b>Arrows:</b> RCtrl | / | RShift     " +
-                                "<b>Gamepad:</b> A | B | X";
+            controlsText.text = MatchControlsLine();
+    }
+
+    // Only the controllers actually playing, so the line stays short and readable
+    private string MatchControlsLine()
+    {
+        sb.Clear();
+        foreach (var scheme in JoinSchemes)
+        {
+            if (!SchemeJoined(scheme.Scheme)) continue;
+            if (sb.Length > 0) sb.Append("        ");
+            sb.Append($"<color=#{Hex(scheme.Color)}>{scheme.Label}</color>  ")
+              .Append("Jump ").Append(ControlHints.CapFor(scheme.Scheme, ControlHints.Action.Jump))
+              .Append("  Power-up ").Append(ControlHints.CapFor(scheme.Scheme, ControlHints.Action.UsePowerUp))
+              .Append("  Dash ").Append(ControlHints.CapFor(scheme.Scheme, ControlHints.Action.Dash));
+        }
+        return sb.ToString();
     }
 
     // 1 / 2 / 3 pick a mode directly; gamepad shoulders step through them
@@ -316,19 +345,12 @@ public class MatchHUD : MonoBehaviour
     }
 
     // Lobby: the middle of the screen. Results: a smaller row under the scoreboard
+    // Lobby and results both keep the buttons along the bottom, so the arena stays in view
     private void PlaceMenu(bool results)
     {
         var rect = (RectTransform)menu.transform;
-        if (results)
-        {
-            Place(rect, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 160f), new Vector2(820f, 200f));
-            rect.localScale = Vector3.one * 0.7f;
-        }
-        else
-        {
-            Place(rect, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 170f), new Vector2(820f, 200f));
-            rect.localScale = Vector3.one;
-        }
+        Place(rect, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 160f), new Vector2(820f, 200f));
+        rect.localScale = Vector3.one * 0.7f;
     }
 
     // Players warm up in the middle of the arena, right under the lobby menu, so a panel turns
@@ -359,46 +381,125 @@ public class MatchHUD : MonoBehaviour
     private string CurrentTip() =>
         ControlHints.Tips[(tipOffset + (int)(Time.unscaledTime / tipInterval)) % ControlHints.Tips.Length];
 
-    // How to Play card (the frame art carries the title): goal, scoring, controls table and a tip
-    private string Guide()
+    // Top of the How to Play card: the picked mode's goal and how points work (changes with the mode)
+    private string GuideGoal()
     {
-        sb.Clear();
-        sb.Append($"<align=center><color=#FFD64D>{MatchManager.ModeName(match.Mode)}:</color> ");
+        string mode = $"<color=#FFD64D>{MatchManager.ModeName(match.Mode)}</color>   ";
         switch (match.Mode)
         {
             case GameMode.StaphIt:
-                sb.Append("When the light turns <color=#ff6b6b>RED</color>, be inside the glowing dome. It moves every round and shrinks.\n");
-                sb.Append("<color=#9cff7a>+1</color> inside when red ends     <color=#ff6b6b>-1</color> caught outside (a shield blocks it)     <color=#9cff7a>+1</color> knock-off</align>\n\n");
-                break;
+                return mode + "On <color=#ff6b6b>RED</color>, be inside the glowing dome.\n" +
+                       "<size=80%><color=#9cff7a>+1</color> in the dome     <color=#ff6b6b>-1</color> caught outside     <color=#9cff7a>+1</color> knock-off</size>";
             case GameMode.BombaClutch:
-                sb.Append("Roll into bombs to set them off - but the blast throws you too. Blasts chain into nearby bombs.\n");
-                sb.Append("<color=#9cff7a>+1</color> every bomb you set off     <color=#ff6b6b>-1</color> falling off on your own</align>\n\n");
-                break;
+                return mode + "Roll into bombs to set them off - the blast throws you too.\n" +
+                       "<size=80%><color=#9cff7a>+1</color> per bomb set off     <color=#ff6b6b>-1</color> falling off on your own</size>";
             default:
-                sb.Append("Knock rivals off the arena. Most points when time runs out wins.\n");
-                sb.Append("<color=#9cff7a>+1</color> knock-off     <color=#FFD64D>+1</color> coin     <color=#ff6b6b>-1</color> falling off on your own</align>\n\n");
-                break;
+                return mode + "Knock rivals off the arena.\n" +
+                       "<size=80%><color=#9cff7a>+1</color> knock-off     <color=#FFD64D>+1</color> coin     <color=#ff6b6b>-1</color> falling off on your own</size>";
         }
-
-        sb.Append("<align=left><color=#FFD64D>ACTION<pos=34%>WASD<pos=56%>ARROWS<pos=79%>GAMEPAD</color>\n");
-        GuideRow("Move", ControlHints.Action.Move);
-        GuideRow("Jump", ControlHints.Action.Jump);
-        GuideRow("Use power-up", ControlHints.Action.UsePowerUp);
-        GuideRow("Dash *", ControlHints.Action.Dash);
-        sb.Append("</align><align=center><size=85%><color=#d8d0ff>Hold 2 power-ups (your corner card). Use fires the left one; a 3rd pickup pushes the oldest out.\n" +
-                  "* While a Dash power-up is running. Levels I-III: bigger, brighter pickups are stronger.</color></size>\n\n");
-
-        sb.Append($"<color=#FFD64D>TIP:</color> {CurrentTip()}</align>");
-        return sb.ToString();
     }
 
-    private void GuideRow(string label, ControlHints.Action action)
+    // How to Play card (the frame art carries the title). Everything sits inside the frame's
+    // dark inner panel with padding: the goal on top, a controls grid with one coloured column
+    // per controller and key caps, and a short power-up line with the close keys at the bottom.
+    private void BuildGuide()
     {
-        sb.Append(label)
-          .Append("<pos=34%>").Append(ControlHints.Key("Keyboard", action))
-          .Append("<pos=56%>").Append(ControlHints.Key("Arrows", action))
-          .Append("<pos=79%>").Append(ControlHints.Key("Gamepad", action))
-          .Append('\n');
+        bool framed = art != null && art.howToPlayFrame != null;
+        // Keeps the frame art's shape (1936 x 1220) and stays clear of the corner player cards
+        guidePanel = CreatePanel("Guide Panel", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            new Vector2(0f, -30f), new Vector2(1260f, 794f));
+        var guideImage = guidePanel.GetComponent<Image>();
+        if (framed)
+        {
+            guideImage.sprite = art.howToPlayFrame;
+            guideImage.color = Color.white;
+        }
+        guideImage.raycastTarget = true;
+        var guideButton = guidePanel.AddComponent<Button>();
+        guideButton.transition = Selectable.Transition.None;
+        guideButton.navigation = new Navigation { mode = Navigation.Mode.None };
+        guideButton.onClick.AddListener(ToggleGuide);
+
+        var content = new GameObject("Content", typeof(RectTransform)).GetComponent<RectTransform>();
+        content.SetParent(guidePanel.transform, false);
+        Anchor(content, framed ? GuideInner : Rect.MinMaxRect(0.03f, 0.04f, 0.97f, 0.96f));
+        content.offsetMin = new Vector2(30f, 22f);
+        content.offsetMax = new Vector2(-30f, -22f);
+
+        // Goal and scoring
+        guideGoal = CreateText(content, "Goal", 14f, 32f, TextAlignmentOptions.Center, 0f);
+        Anchor(guideGoal.rectTransform, Rect.MinMaxRect(0f, 0.82f, 1f, 1f));
+
+        // Controls grid: label column, then WASD / ARROWS / GAMEPAD
+        var grid = new GameObject("Controls", typeof(RectTransform)).GetComponent<RectTransform>();
+        grid.SetParent(content, false);
+        Anchor(grid, Rect.MinMaxRect(0f, 0.2f, 1f, 0.79f));
+
+        const float labelWidth = 0.25f;
+        float column = (1f - labelWidth) / JoinSchemes.Length;
+        const float headerHeight = 0.18f;
+        var actions = new[]
+        {
+            (ControlHints.Action.Move, "MOVE", ""),
+            (ControlHints.Action.Jump, "JUMP", ""),
+            (ControlHints.Action.UsePowerUp, "POWER-UP", "uses the left one"),
+            (ControlHints.Action.Dash, "DASH", "with Dash power-up")
+        };
+        float row = (1f - headerHeight) / actions.Length;
+
+        for (int c = 0; c < JoinSchemes.Length; c++)
+        {
+            var scheme = JoinSchemes[c];
+            var header = new GameObject($"{scheme.Label} Header", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+            header.rectTransform.SetParent(grid, false);
+            Anchor(header.rectTransform, Rect.MinMaxRect(labelWidth + c * column + 0.01f, 1f - headerHeight, labelWidth + (c + 1) * column - 0.01f, 1f));
+            header.color = scheme.Color;
+            header.raycastTarget = false;
+            var headerText = CreateText(header.rectTransform, "Label", 12f, 30f, TextAlignmentOptions.Center, 2f);
+            headerText.text = scheme.Label;
+            // Dark lettering reads better than white on the bright scheme colours
+            headerText.color = OutlineColor;
+            headerText.outlineWidth = 0f;
+        }
+
+        for (int r = 0; r < actions.Length; r++)
+        {
+            var (action, label, note) = actions[r];
+            float top = 1f - headerHeight - r * row;
+
+            // Every other row gets a faint stripe so eyes can follow it across
+            if (r % 2 == 0)
+            {
+                var stripe = new GameObject("Stripe", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+                stripe.rectTransform.SetParent(grid, false);
+                stripe.rectTransform.SetAsFirstSibling();
+                Anchor(stripe.rectTransform, Rect.MinMaxRect(0f, top - row, 1f, top));
+                stripe.color = new Color(1f, 1f, 1f, 0.06f);
+                stripe.raycastTarget = false;
+            }
+
+            var labelText = CreateText(grid, label, 12f, 28f, TextAlignmentOptions.Left, 0f);
+            Anchor(labelText.rectTransform, Rect.MinMaxRect(0.015f, top - row, labelWidth, top));
+            labelText.text = note.Length > 0
+                ? $"<color=#FFD64D>{label}</color>\n<size=60%><color=#d8d0ff>{note}</color></size>"
+                : $"<color=#FFD64D>{label}</color>";
+            labelText.lineSpacing = -20f;
+
+            for (int c = 0; c < JoinSchemes.Length; c++)
+            {
+                var cell = CreateText(grid, $"{JoinSchemes[c].Label} {label}", 12f, 26f, TextAlignmentOptions.Center, 0f);
+                Anchor(cell.rectTransform, Rect.MinMaxRect(labelWidth + c * column, top - row, labelWidth + (c + 1) * column, top));
+                cell.text = ControlHints.CapFor(JoinSchemes[c].Scheme, action);
+            }
+        }
+
+        // Power-ups and how to close, inside the card
+        var footer = CreateText(content, "Footer", 12f, 24f, TextAlignmentOptions.Center, 0f);
+        Anchor(footer.rectTransform, Rect.MinMaxRect(0f, 0f, 1f, 0.18f));
+        footer.text = "<color=#FFD64D>POWER-UPS</color>   Hold 2   |   Use fires the left one   |   More stacked icons = stronger\n" +
+                      $"<size=80%><color=#d8d0ff>Close</color> {ControlHints.Cap("H")} <color=#d8d0ff>/</color> {ControlHints.Cap("Select")} <color=#d8d0ff>or click the card</color></size>";
+
+        guidePanel.SetActive(false);
     }
 
     // --- Content ---
@@ -461,18 +562,16 @@ public class MatchHUD : MonoBehaviour
         if (!InMenu) return "";
 
         string join;
-        if (match.State != MatchManager.MatchState.Lobby)
-            join = "Join: <b>SPACE</b> (WASD)   <b>RSHIFT</b> (Arrows)   <b>A</b> (Gamepad)\n";
-        else if (!LobbyFull && SchemeJoined("Gamepad"))
-            // The gamepad card is gone after the first pad, but more pads can still join
-            join = $"More controllers: press <color=#{Hex(JoinSchemes[2].Color)}>A</color> to join\n";
+        // In the lobby the join cards say it; after a match there are no cards, so say it here
+        if (match.State != MatchManager.MatchState.Lobby && !LobbyFull)
+            join = $"<size=80%>Join:  WASD {ControlHints.Cap("Space")}   Arrows {ControlHints.Cap("Right Shift")}   Gamepad {ControlHints.Cap("A")}</size>\n";
         else
             join = "";
         // On the results screen the mode cards are hidden, so say which mode a rematch plays
         if (match.State == MatchManager.MatchState.MatchOver)
             join += $"Mode: <color=#FFD64D>{MatchManager.ModeName(match.Mode)}</color>  <size=80%>(1 / 2 / 3 or LB / RB to change)</size>\n";
         if (match.CanStart)
-            return $"{join}Press <b>ENTER</b> / <b>START</b> to {(match.State == MatchManager.MatchState.Lobby ? "start" : "rematch")}";
+            return $"{join}Press {ControlHints.Cap("Enter")} / {ControlHints.Cap("Start")} to {(match.State == MatchManager.MatchState.Lobby ? "start" : "rematch")}";
         if (match.Players.Count < match.MinPlayersToStart)
             return $"{join}Need {match.MinPlayersToStart}+ players to start";
         return join.TrimEnd('\n');
@@ -483,35 +582,42 @@ public class MatchHUD : MonoBehaviour
     private bool SchemeJoined(string scheme) => match.Players.Any(p => p.ControlScheme == scheme);
 
     // --- Join cards ---
-    // A card disappears once someone joins with its controls; the rest close up in the centre
+    // Cards never move or disappear (the column stays mirrored with the mode cards): each says
+    // what to press to join, then who joined on it. Every gamepad joins as its own player.
     private void UpdateJoinCards()
     {
-        var open = new List<int>();
         for (int i = 0; i < JoinSchemes.Length && i < joinTexts.Count; i++)
         {
-            bool show = !LobbyFull && !SchemeJoined(JoinSchemes[i].Scheme);
-            joinTexts[i].transform.parent.gameObject.SetActive(show);
-            if (show) open.Add(i);
-        }
-
-        // Cards keep their width; the row stays centred however many are left
-        float width = 1f / JoinSchemes.Length;
-        float start = 0.5f - open.Count * width * 0.5f;
-        for (int n = 0; n < open.Count; n++)
-        {
-            int i = open[n];
             var scheme = JoinSchemes[i];
-            Anchor((RectTransform)joinTexts[i].transform.parent,
-                Rect.MinMaxRect(start + n * width + 0.012f, 0f, start + (n + 1) * width - 0.012f, 1f));
+            var joined = match.Players.Where(p => p.ControlScheme == scheme.Scheme).ToList();
+            bool gamepad = scheme.Scheme == "Gamepad";
+            string power = ControlHints.CapFor(scheme.Scheme, ControlHints.Action.UsePowerUp);
 
             sb.Clear();
-            sb.Append($"Press <color=#{Hex(scheme.Color)}>{scheme.JoinKey}</color> to join");
-            sb.Append("\n<size=70%><color=#d8d0ff>")
-              .Append("Jump ").Append(ControlHints.Key(scheme.Scheme, ControlHints.Action.Jump))
-              .Append("  |  Use ").Append(ControlHints.Key(scheme.Scheme, ControlHints.Action.UsePowerUp))
-              .Append("  |  Dash ").Append(ControlHints.Key(scheme.Scheme, ControlHints.Action.Dash))
-              .Append("</color></size>");
+            if (joined.Count > 0 && (!gamepad || LobbyFull))
+            {
+                // Taken: show who, in their colour, and their power-up key
+                sb.Append(string.Join("  ", joined.Select(p => $"<color=#{Hex(p.Color)}>{p.Name}</color>"))).Append(" JOINED");
+                sb.Append($"\n<size=72%><color=#d8d0ff>Power-up</color> {power}</size>");
+            }
+            else if (LobbyFull)
+            {
+                sb.Append("<color=#9a93b8>LOBBY FULL</color>");
+            }
+            else
+            {
+                string join = ControlHints.Cap(ControlHints.JoinKey(scheme.Scheme));
+                sb.Append($"Press {join} {(gamepad ? "on each pad" : "to join")}");
+                if (gamepad && joined.Count > 0)
+                    sb.Append($"\n<size=72%>{string.Join(" ", joined.Select(p => $"<color=#{Hex(p.Color)}>{p.Name}</color>"))} <color=#d8d0ff>joined - Power-up</color> {power}</size>");
+                else
+                    sb.Append($"\n<size=72%><color=#d8d0ff>Power-up</color> {power}</size>");
+            }
             joinTexts[i].text = sb.ToString();
+
+            // Dim a card nobody can use any more
+            bool spent = (joined.Count > 0 && !gamepad) || LobbyFull;
+            joinCards[i].color = spent ? new Color(PanelColor.r * 0.75f, PanelColor.g * 0.75f, PanelColor.b * 0.75f, PanelColor.a) : PanelColor;
         }
     }
 
@@ -531,14 +637,16 @@ public class MatchHUD : MonoBehaviour
             card.Coins.text = p.Coins.ToString();
             card.Status.text = Status(p);
 
-            // Level badge on each filled slot (slot 1 is the oldest, used next)
+            // Level = how many icons are stacked in the slot (slot 1 is the oldest, used next)
             if (p.PowerUps == null || card.Box == null) continue;
             var items = p.PowerUps.Items;
             bool stale = false;
-            for (int s = 0; s < card.Badges.Length; s++)
+            for (int s = 0; s < card.Stacks.Length; s++)
             {
-                card.Badges[s].text = s < items.Count ? ControlHints.LevelNumeral(items[s]) : "";
-                stale |= card.Box.icons[s].enabled != s < items.Count;
+                var icon = card.Box.icons[s];
+                int level = s < items.Count && items[s] != null ? Mathf.Clamp(items[s].Level, 1, 3) : 0;
+                LayoutStack(card.SlotRects[s], level, icon, card.Stacks[s]);
+                stale |= icon.enabled != s < items.Count;
             }
             // A pickup grabbed on the frame the player spawned lands before the box's own Start
             // hides its icons, so redraw if they ever disagree with the inventory
@@ -546,8 +654,9 @@ public class MatchHUD : MonoBehaviour
         }
     }
 
-    private static string Status(MatchManager.PlayerEntry p)
+    private string Status(MatchManager.PlayerEntry p)
     {
+        if (match.IsControllerLost(p)) return $"<color=#ff6b6b>NO CONTROLLER</color> - press {ControlHints.Cap("A")}";
         if (p.IsRespawning) return $"<color=#aaaaaa>back in {Mathf.CeilToInt(p.RespawnAt - Time.time)}</color>";
         var parts = new List<string>();
         if (p.Player.IsInvulnerable) parts.Add("<color=#7fd7ff>SHIELD</color>");
@@ -617,36 +726,83 @@ public class MatchHUD : MonoBehaviour
         Anchor(card.Coins.rectTransform, Rect.MinMaxRect(0.39f, 0.1f, 0.5f, 0.9f));
         Anchor(card.Status.rectTransform, Rect.MinMaxRect(0.5f, 0.1f, 0.97f, 0.9f));
 
-        if (powerUpBoxPrefab != null && entry.PowerUps != null) card.Badges = AttachPowerUpIcons(entry, index, frame.rectTransform, out card.Box);
+        if (powerUpBoxPrefab != null && entry.PowerUps != null) AttachPowerUpIcons(entry, index, frame.rectTransform, card);
+
+        // Which key fires the stored power-up, right under the slot it fires from
+        var useHint = CreateText(frame.rectTransform, "Use Key", 10f, 20f, TextAlignmentOptions.Center, 0f);
+        Rect firstSlot = InventorySlots[1];
+        Anchor(useHint.rectTransform, Rect.MinMaxRect(firstSlot.xMin - 0.04f, firstSlot.yMin - 0.22f, firstSlot.xMax + 0.04f, firstSlot.yMin - 0.01f));
+        useHint.text = $"USE {ControlHints.CapFor(entry.ControlScheme, ControlHints.Action.UsePowerUp)}";
         return card;
     }
 
     // Slots 2-3: the PowerupHUD prefab keeps filling its icons; we only move them into the frame
-    private TextMeshProUGUI[] AttachPowerUpIcons(MatchManager.PlayerEntry entry, int index, RectTransform frame, out PowerupInventoryUI box)
+    // and add the stacked copies that show the level
+    private void AttachPowerUpIcons(MatchManager.PlayerEntry entry, int index, RectTransform frame, PlayerCard card)
     {
         var ui = Instantiate(powerUpBoxPrefab, frame, false);
-        box = ui;
+        card.Box = ui;
         ui.name = $"{entry.Name} Power-Ups";
         ui.Initialize(index + 1, entry.PowerUps.Inventory);
         // Redraw the icons when the match empties the inventory
         entry.PowerUps.Cleared += () => ui.SendMessage("RefreshUI", SendMessageOptions.DontRequireReceiver);
 
-        var badges = new TextMeshProUGUI[ui.icons.Length];
+        card.Stacks = new Image[ui.icons.Length][];
+        card.SlotRects = new Rect[ui.icons.Length];
         for (int s = 0; s < ui.icons.Length; s++)
         {
+            card.SlotRects[s] = Inset(InventorySlots[Mathf.Min(s + 1, InventorySlots.Length - 1)], 0.1f);
+
+            // Copies first, so they draw behind the real icon
+            card.Stacks[s] = new Image[2];
+            for (int k = 0; k < card.Stacks[s].Length; k++)
+            {
+                var copy = new GameObject($"Stack {k + 2}", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+                copy.rectTransform.SetParent(frame, false);
+                copy.preserveAspect = true;
+                copy.raycastTarget = false;
+                copy.enabled = false;
+                card.Stacks[s][k] = copy;
+            }
+
             var icon = ui.icons[s];
             icon.rectTransform.SetParent(frame, false);
-            Anchor(icon.rectTransform, Inset(InventorySlots[Mathf.Min(s + 1, InventorySlots.Length - 1)], 0.1f));
             icon.preserveAspect = true;
             icon.enabled = false;
-
-            badges[s] = CreateText(icon.rectTransform, "Level", 18f, 34f, TextAlignmentOptions.BottomRight, 0f);
-            Place(badges[s].rectTransform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), new Vector2(6f, -6f), Vector2.zero);
-            badges[s].color = GoldColor;
+            LayoutStack(card.SlotRects[s], 0, icon, card.Stacks[s]);
         }
         // Hide the prefab's own frame; its script stays alive to update the icons
-        foreach (var graphic in ui.GetComponentsInChildren<Graphic>(true)) graphic.enabled = false;
-        return badges;
+        foreach (var graphic in ui.GetComponentsInChildren<Graphic>(true))
+        {
+            if (System.Array.IndexOf(ui.icons, graphic) < 0) graphic.enabled = false;
+        }
+    }
+
+    // Level 1: one icon filling the slot. Level 2-3: that many smaller icons stacked upward, only
+    // just overlapping so each one is easy to count; the real icon in front at the bottom.
+    private static void LayoutStack(Rect slot, int level, Image icon, Image[] copies)
+    {
+        float size = level >= 3 ? 0.4f : level == 2 ? 0.54f : 1f;
+        float step = level >= 3 ? 0.3f : 0.46f;
+        float total = size + Mathf.Max(0, level - 1) * step;
+        float bottom = (1f - total) * 0.5f;
+        float left = (1f - size) * 0.5f;
+
+        Rect At(int k) => Rect.MinMaxRect(
+            slot.xMin + left * slot.width, slot.yMin + (bottom + k * step) * slot.height,
+            slot.xMin + (left + size) * slot.width, slot.yMin + (bottom + k * step + size) * slot.height);
+
+        Anchor(icon.rectTransform, At(0));
+        for (int k = 0; k < copies.Length; k++)
+        {
+            bool show = level >= k + 2 && icon.enabled && icon.sprite != null;
+            copies[k].enabled = show;
+            if (!show) continue;
+            copies[k].sprite = icon.sprite;
+            float shade = k == 0 ? 0.85f : 0.72f;
+            copies[k].color = new Color(shade, shade, shade, 1f);
+            Anchor(copies[k].rectTransform, At(k + 1));
+        }
     }
 
     // --- Results ---
@@ -770,7 +926,7 @@ public class MatchHUD : MonoBehaviour
         {
             logoImage.enabled = false;
         }
-        Place((RectTransform)logo.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -8f), new Vector2(460f, 257f));
+        Place((RectTransform)logo.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -8f), new Vector2(340f, 190f));
 
         // Top-centre timer, event banner and feed
         timerPanel = CreatePanel("Timer Panel", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
@@ -802,21 +958,7 @@ public class MatchHUD : MonoBehaviour
         BuildSignalTint();
 
         // How to Play card, centred under the logo; clicking it closes it
-        guidePanel = CreatePanel("Guide Panel", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-            new Vector2(0f, -45f), new Vector2(1000f, 630f));
-        var guideImage = guidePanel.GetComponent<Image>();
-        if (art != null && art.howToPlayFrame != null)
-        {
-            guideImage.sprite = art.howToPlayFrame;
-            guideImage.color = Color.white;
-        }
-        guideImage.raycastTarget = true;
-        var guideButton = guidePanel.AddComponent<Button>();
-        guideButton.transition = Selectable.Transition.None;
-        guideButton.onClick.AddListener(ToggleGuide);
-        guideText = CreateText(guidePanel.transform, "Guide", 12f, 30f, TextAlignmentOptions.TopLeft, 0f);
-        Anchor(guideText.rectTransform, guideImage.sprite != null ? GuideInner : Rect.MinMaxRect(0.03f, 0.04f, 0.97f, 0.96f));
-        guidePanel.SetActive(false);
+        BuildGuide();
 
         // Bottom prompt and controls, between the bottom player cards
         promptText = CreateText(safeArea, "Prompt", 18f, 34f, TextAlignmentOptions.Bottom, 0f);
@@ -824,7 +966,8 @@ public class MatchHUD : MonoBehaviour
 
         controlsText = CreateText(safeArea, "Controls", 12f, 22f, TextAlignmentOptions.Bottom, 0f);
         controlsText.color = new Color(0.9f, 0.88f, 1f);
-        Place(controlsText.rectTransform, new Vector2(0.25f, 0f), new Vector2(0.75f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 14f), new Vector2(0f, 48f));
+        // As wide as the gap between the bottom corner cards, so 3-4 controllers fit on one line
+        Place(controlsText.rectTransform, new Vector2(0.19f, 0f), new Vector2(0.81f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 14f), new Vector2(0f, 48f));
     }
 
     // Results: name plates inside the scoreboard frame, centred under the winner title
@@ -871,15 +1014,17 @@ public class MatchHUD : MonoBehaviour
     {
         modePanel = new GameObject("Modes", typeof(RectTransform));
         modePanel.transform.SetParent(safeArea, false);
-        Place((RectTransform)modePanel.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -20f), new Vector2(1140f, 130f));
+        // A column down the left edge, between the corner player cards, so the arena stays in view
+        Place((RectTransform)modePanel.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+            new Vector2(cornerMargin + 12f, 0f), new Vector2(SideColumnWidth, SideCardHeight * Modes.Length));
 
-        float width = 1f / Modes.Length;
+        float height = 1f / Modes.Length;
         for (int i = 0; i < Modes.Length; i++)
         {
             var info = Modes[i];
             var root = new GameObject($"{info.Title} Mode", typeof(RectTransform)).GetComponent<RectTransform>();
             root.SetParent(modePanel.transform, false);
-            Anchor(root, Rect.MinMaxRect(i * width + 0.015f, 0f, (i + 1) * width - 0.015f, 1f));
+            Anchor(root, Rect.MinMaxRect(0f, 1f - (i + 1) * height + 0.02f, 1f, 1f - i * height - 0.02f));
 
             var go = new GameObject("Card", typeof(RectTransform), typeof(Image), typeof(Button));
             go.transform.SetParent(root, false);
@@ -888,7 +1033,9 @@ public class MatchHUD : MonoBehaviour
             var outline = go.AddComponent<Outline>();
             outline.effectDistance = new Vector2(4f, -4f);
             var mode = info.Mode;
-            go.GetComponent<Button>().onClick.AddListener(() => match.SetMode(mode));
+            var modeButton = go.GetComponent<Button>();
+            modeButton.navigation = new Navigation { mode = Navigation.Mode.None };
+            modeButton.onClick.AddListener(() => match.SetMode(mode));
 
             var text = CreateText(background.rectTransform, "Text", 12f, 34f, TextAlignmentOptions.Center, 8f);
             modeCards.Add(new ModeCard { Root = root, Background = background, Outline = outline, Text = text });
@@ -905,10 +1052,10 @@ public class MatchHUD : MonoBehaviour
             // The picked mode is lit in its colour and a bit bigger; the others sit back
             card.Background.color = selected ? Color.Lerp(PanelColor, info.Color, 0.55f) : PanelColor;
             card.Outline.effectColor = selected ? GoldColor : new Color(info.Color.r, info.Color.g, info.Color.b, 0.6f);
-            float scale = Mathf.Lerp(card.Root.localScale.x, selected ? 1.06f : 0.94f, 1f - Mathf.Exp(-12f * Time.unscaledDeltaTime));
-            card.Root.localScale = Vector3.one * scale;
+            // Same size whether picked or not, so the column mirrors the join cards
+            card.Root.localScale = Vector3.one;
             string key = (i + 1).ToString();
-            card.Text.text = $"<color=#{(selected ? "FFD64D" : Hex(info.Color))}>{info.Title}</color>  <size=60%>[{key}]</size>\n" +
+            card.Text.text = $"<color=#{(selected ? "FFD64D" : Hex(info.Color))}>{info.Title}</color>  <size=65%>{ControlHints.Cap(key)}</size>\n" +
                              $"<size=65%><color=#{(selected ? "FFFFFF" : "d8d0ff")}>{info.Blurb}</color></size>";
         }
     }
@@ -973,15 +1120,18 @@ public class MatchHUD : MonoBehaviour
     {
         joinPanel = new GameObject("Join", typeof(RectTransform));
         joinPanel.transform.SetParent(safeArea, false);
-        Place((RectTransform)joinPanel.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -200f), new Vector2(1140f, 170f));
+        // A column down the right edge, mirroring the mode cards, so the arena stays in view
+        Place((RectTransform)joinPanel.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
+            new Vector2(-cornerMargin - 12f, 0f), new Vector2(SideColumnWidth, SideCardHeight * JoinSchemes.Length));
 
-        float width = 1f / JoinSchemes.Length;
+        float height = 1f / JoinSchemes.Length;
         for (int i = 0; i < JoinSchemes.Length; i++)
         {
             var scheme = JoinSchemes[i];
             var card = new GameObject($"{scheme.Label} Join", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
             card.rectTransform.SetParent(joinPanel.transform, false);
-            Anchor(card.rectTransform, Rect.MinMaxRect(i * width + 0.012f, 0f, (i + 1) * width - 0.012f, 1f));
+            // Same insets as the mode cards so both columns line up
+            Anchor(card.rectTransform, Rect.MinMaxRect(0f, 1f - (i + 1) * height + 0.02f, 1f, 1f - i * height - 0.02f));
             card.color = PanelColor;
             card.raycastTarget = false;
             var outline = card.gameObject.AddComponent<Outline>();
@@ -991,15 +1141,16 @@ public class MatchHUD : MonoBehaviour
             // Coloured header with the scheme's name
             var header = new GameObject("Header", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
             header.rectTransform.SetParent(card.rectTransform, false);
-            Anchor(header.rectTransform, Rect.MinMaxRect(0f, 0.7f, 1f, 1f));
+            Anchor(header.rectTransform, Rect.MinMaxRect(0f, 0.68f, 1f, 1f));
             header.color = scheme.Color;
             header.raycastTarget = false;
             var title = CreateText(header.rectTransform, "Scheme", 14f, 34f, TextAlignmentOptions.Center, 2f);
             title.text = scheme.Label;
 
             var body = CreateText(card.rectTransform, "Body", 12f, 30f, TextAlignmentOptions.Center, 0f);
-            Anchor(body.rectTransform, Rect.MinMaxRect(0.04f, 0.05f, 0.96f, 0.68f));
+            Anchor(body.rectTransform, Rect.MinMaxRect(0.04f, 0.06f, 0.96f, 0.66f));
             joinTexts.Add(body);
+            joinCards.Add(card);
         }
     }
 
@@ -1023,6 +1174,7 @@ public class MatchHUD : MonoBehaviour
             image.color = PanelColor;
         }
         var button = go.GetComponent<Button>();
+        button.navigation = new Navigation { mode = Navigation.Mode.None };
         button.onClick.AddListener(onClick);
         var colors = button.colors;
         colors.highlightedColor = new Color(1f, 0.95f, 0.8f);

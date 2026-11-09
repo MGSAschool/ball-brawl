@@ -76,6 +76,11 @@ public class FallingPlatforms : MonoBehaviour
     [SerializeField] private bool randomizeIslandSide = true;
     [Tooltip("Island direction in degrees when not randomized (90 = far side from the default camera).")]
     [SerializeField] private float islandAngle = 90f;
+    [Tooltip("Optional model for the late-match platform (e.g. a floating island). When set it replaces the hub-and-pads layout. " +
+             "Its pivot should sit at the middle of its footprint, level with the ground players stand on.")]
+    [SerializeField] private Mesh islandModel;
+    [SerializeField] private Material islandModelMaterial;
+    [SerializeField] private float islandModelScale = 0.75f;
 
     [Header("Island Freezing")]
     [SerializeField] private Vector2 freezeInterval = new Vector2(4f, 7f);
@@ -87,6 +92,18 @@ public class FallingPlatforms : MonoBehaviour
     [Header("Look")]
     [SerializeField] private Color warningColor = new Color(1f, 0.25f, 0.15f);
     [SerializeField] private Color iceColor = new Color(0.55f, 0.85f, 1f);
+    [Tooltip("Floor colours from the middle out: middle disc, middle ring, then each outer ring (the last colour repeats if there are more rings). Empty uses the arena material's colour.")]
+    [SerializeField] private Color[] ringColors =
+    {
+        new Color(0.96f, 0.91f, 0.78f), // middle disc - cream
+        new Color(0.91f, 0.73f, 0.36f), // middle ring - gold
+        new Color(0.55f, 0.76f, 0.32f), // ring 1 - grass
+        new Color(0.45f, 0.65f, 0.26f), // ring 2 - darker grass
+        new Color(0.85f, 0.70f, 0.48f)  // outer ring - tan track
+    };
+    [Tooltip("Every other section in a ring is darkened by this much so each platform reads as its own piece.")]
+    [Range(0f, 0.5f)]
+    [SerializeField] private float alternateShade = 0.12f;
 
     [SerializeField] private MatchManager match;
 
@@ -100,6 +117,8 @@ public class FallingPlatforms : MonoBehaviour
     private readonly List<Vector3> islandPadOffsets = new List<Vector3>();
     private Transform islandRoot;
     private Transform[] islandSpawns;
+    // How far the island reaches from its center toward the arena
+    private float islandReach;
     private PhysicsMaterial iceMaterial;
     private bool active;
     // Permanent falls and the island are the Brawl finale; minigames keep the normal crumbling
@@ -286,7 +305,7 @@ public class FallingPlatforms : MonoBehaviour
 
     private void PlaceIsland(float angleDegrees)
     {
-        float distance = Radius + islandGap + padRing.y;
+        float distance = Radius + islandGap + islandReach;
         float a = angleDegrees * Mathf.Deg2Rad;
         islandRoot.position = Center + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * distance;
         // Turn the island so pad 1 (local +X) faces the arena; Unity's yaw turns +X toward -Z
@@ -363,7 +382,7 @@ public class FallingPlatforms : MonoBehaviour
         root.SetParent(transform.parent, false);
         root.position = Center;
 
-        CreateSection(root, "Middle Disc", 0f, middleDiscRadius, 0f, Mathf.PI * 2f, material, physicsMaterial, baseColor);
+        CreateSection(root, "Middle Disc", 0f, middleDiscRadius, 0f, Mathf.PI * 2f, material, physicsMaterial, FloorColor(0, 0, baseColor));
 
         // The rest of the middle area, then the outer rings, all cut into similar-sized pieces
         var rings = new List<Vector2> { new Vector2(middleDiscRadius, centerRadius) };
@@ -379,6 +398,8 @@ public class FallingPlatforms : MonoBehaviour
             float r1 = rings[ring].y;
             float midCircumference = Mathf.PI * (r0 + r1);
             int count = Mathf.Max(3, Mathf.RoundToInt(midCircumference / targetSectionLength));
+            // Even counts let the light/dark pattern alternate all the way round
+            if (alternateShade > 0f && count % 2 == 1) count++;
             // Stagger rings so seams don't line up into long straight cracks
             float offset = ring * 0.5f * (Mathf.PI * 2f / count);
             string ringName = ring == 0 ? "Middle Ring" : $"Ring {ring}";
@@ -387,7 +408,7 @@ public class FallingPlatforms : MonoBehaviour
             {
                 float a0 = offset + i * Mathf.PI * 2f / count;
                 float a1 = a0 + Mathf.PI * 2f / count;
-                CreateSection(root, $"{ringName} Section {i + 1}", r0, r1, a0, a1, material, physicsMaterial, baseColor);
+                CreateSection(root, $"{ringName} Section {i + 1}", r0, r1, a0, a1, material, physicsMaterial, FloorColor(ring + 1, i, baseColor));
             }
         }
 
@@ -396,13 +417,93 @@ public class FallingPlatforms : MonoBehaviour
         foreach (var pad in islandPads) pad.HideImmediate();
     }
 
-    // Late-match island: a hub pad ringed by smaller curved pads with gaps to jump, some raised
+    // Colour for a section: its ring's colour, with every other section in the ring a shade darker
+    private Color FloorColor(int ringIndex, int sectionIndex, Color fallback)
+    {
+        if (ringColors == null || ringColors.Length == 0) return fallback;
+        Color color = ringColors[Mathf.Min(ringIndex, ringColors.Length - 1)];
+        if (sectionIndex % 2 == 1)
+        {
+            float keep = 1f - alternateShade;
+            color = new Color(color.r * keep, color.g * keep, color.b * keep, color.a);
+        }
+        return color;
+    }
+
     private void BuildIsland(Material material, PhysicsMaterial physicsMaterial, Color baseColor)
     {
         islandRoot = new GameObject("Island").transform;
         islandRoot.SetParent(transform.parent, false);
         islandRoot.position = Center;
 
+        if (islandModel != null) BuildModelIsland(material, physicsMaterial);
+        else BuildPadIsland(material, physicsMaterial, baseColor);
+    }
+
+    // Late-match island from a model (e.g. one of the stadium's floating islands): one solid platform
+    private void BuildModelIsland(Material fallbackMaterial, PhysicsMaterial physicsMaterial)
+    {
+        var go = new GameObject("Floating Island", typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider), typeof(Rigidbody), typeof(ArenaSection));
+        go.transform.SetParent(islandRoot, false);
+        go.transform.localScale = Vector3.one * islandModelScale;
+        go.GetComponent<MeshFilter>().sharedMesh = islandModel;
+        go.GetComponent<MeshRenderer>().sharedMaterial = islandModelMaterial != null ? islandModelMaterial : fallbackMaterial;
+        var meshCollider = go.GetComponent<MeshCollider>();
+        meshCollider.sharedMesh = islandModel;
+        meshCollider.sharedMaterial = physicsMaterial;
+
+        // Farthest point from the pivot, so the gap holds whichever way the island is turned
+        float reach = 0f;
+        foreach (var v in islandModel.vertices) reach = Mathf.Max(reach, new Vector2(v.x, v.z).magnitude);
+        islandReach = reach * islandModelScale;
+
+        var pad = go.GetComponent<ArenaSection>();
+        // White keeps the model's own texture; warnings and ice tint over it
+        pad.Init(0f, islandReach, 0f, Mathf.PI * 2f, Color.white, warningColor);
+        pad.CanFall = false;
+        islandPads.Add(pad);
+        islandPadOffsets.Add(Vector3.zero);
+
+        // Spawns around the middle, resting on whatever the ground height is there (the model isn't flat)
+        islandSpawns = new Transform[4];
+        for (int i = 0; i < islandSpawns.Length; i++)
+        {
+            float a = i * Mathf.PI * 0.5f + Mathf.PI * 0.25f;
+            Vector3 local = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * (islandReach * 0.4f);
+            float ground = TopHeightAt(islandModel, local / islandModelScale) * islandModelScale;
+            var spawn = new GameObject($"Island Spawn {i + 1}").transform;
+            spawn.SetParent(islandRoot, false);
+            spawn.localPosition = local + Vector3.up * (ground + 1.4f);
+            islandSpawns[i] = spawn;
+        }
+    }
+
+    // Highest point of the mesh straight above/below a local XZ point (0 if the point misses the mesh)
+    private static float TopHeightAt(Mesh mesh, Vector3 point)
+    {
+        var vertices = mesh.vertices;
+        var triangles = mesh.triangles;
+        float best = float.NegativeInfinity;
+        var p = new Vector2(point.x, point.z);
+        for (int t = 0; t < triangles.Length; t += 3)
+        {
+            Vector3 a = vertices[triangles[t]], b = vertices[triangles[t + 1]], c = vertices[triangles[t + 2]];
+            Vector2 a2 = new Vector2(a.x, a.z), b2 = new Vector2(b.x, b.z), c2 = new Vector2(c.x, c.z);
+            float area = (b2.x - a2.x) * (c2.y - a2.y) - (c2.x - a2.x) * (b2.y - a2.y);
+            if (Mathf.Abs(area) < 1e-6f) continue;
+            float u = ((b2.x - p.x) * (c2.y - p.y) - (c2.x - p.x) * (b2.y - p.y)) / area;
+            float v = ((c2.x - p.x) * (a2.y - p.y) - (a2.x - p.x) * (c2.y - p.y)) / area;
+            float w = 1f - u - v;
+            if (u < 0f || v < 0f || w < 0f) continue;
+            best = Mathf.Max(best, u * a.y + v * b.y + w * c.y);
+        }
+        return float.IsNegativeInfinity(best) ? 0f : best;
+    }
+
+    // Late-match island: a hub pad ringed by smaller curved pads with gaps to jump, some raised
+    private void BuildPadIsland(Material material, PhysicsMaterial physicsMaterial, Color baseColor)
+    {
+        islandReach = padRing.y;
         AddIslandPad("Island Hub", 0f, hubRadius, 0f, Mathf.PI * 2f, 0f, material, physicsMaterial, baseColor);
 
         float arc = Mathf.Clamp(padArcDegrees, 5f, 360f / Mathf.Max(1, padCount)) * Mathf.Deg2Rad;

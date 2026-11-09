@@ -28,6 +28,9 @@ public class MatchManager : MonoBehaviour
         public bool IsRespawning;
         public float RespawnAt;
         public string ControlScheme;
+        // The keyboard or gamepad this player joined with
+        public InputDevice Device;
+        public bool ControllerLostAnnounced;
         // Power-up types this player has already been shown a "press X" hint for
         public readonly HashSet<System.Type> HintedPowerUps = new HashSet<System.Type>();
     }
@@ -115,6 +118,9 @@ public class MatchManager : MonoBehaviour
 
     private void Update()
     {
+        // Controllers can drop out at any time (battery, cable), so this runs in every state
+        HandleLostControllers();
+
         if (State == MatchState.Lobby || State == MatchState.MatchOver)
         {
             HandleJoining();
@@ -159,14 +165,59 @@ public class MatchManager : MonoBehaviour
             }
         }
 
+        // Every gamepad is its own player; WASD and Arrows stay available alongside them
         foreach (var gamepad in Gamepad.all)
         {
             if (players.Count >= maxPlayers) break;
-            if (!joinedGamepads.Contains(gamepad) && gamepad.buttonSouth.wasPressedThisFrame && Join("Gamepad", gamepad))
-            {
-                joinedGamepads.Add(gamepad);
-            }
+            if (joinedGamepads.Contains(gamepad) || !gamepad.buttonSouth.wasPressedThisFrame) continue;
+            // A free pad first takes over a player whose controller dropped out
+            if (TryReconnect(gamepad)) continue;
+            if (Join("Gamepad", gamepad)) joinedGamepads.Add(gamepad);
         }
+    }
+
+    // --- Lost controllers ---
+    // True when a gamepad player's controller is unplugged or out of battery
+    public bool IsControllerLost(PlayerEntry entry) =>
+        entry != null && entry.ControlScheme == "Gamepad" && (entry.Device == null || !entry.Device.added);
+
+    private void HandleLostControllers()
+    {
+        foreach (var entry in players)
+        {
+            if (!IsControllerLost(entry))
+            {
+                // The same pad plugged back in: PlayerInput re-pairs it by itself
+                entry.ControllerLostAnnounced = false;
+                continue;
+            }
+            if (entry.ControllerLostAnnounced) continue;
+            entry.ControllerLostAnnounced = true;
+            Announce($"{entry.Name}'s controller disconnected - reconnect it, or press A on a free controller");
+        }
+
+        // Mid-match a spare pad can still rescue a player (joining new players waits for the menus)
+        if (State == MatchState.Lobby || State == MatchState.MatchOver) return;
+        foreach (var gamepad in Gamepad.all)
+        {
+            if (!joinedGamepads.Contains(gamepad) && gamepad.buttonSouth.wasPressedThisFrame) TryReconnect(gamepad);
+        }
+    }
+
+    private bool TryReconnect(Gamepad gamepad)
+    {
+        var entry = players.FirstOrDefault(IsControllerLost);
+        if (entry == null || entry.Player == null || !entry.Player.TryGetComponent<PlayerInput>(out var input)) return false;
+
+        // Pairs the new pad to this player and drops the lost one
+        input.SwitchCurrentControlScheme("Gamepad", gamepad);
+        if (entry.Device != null) joinedGamepads.Remove(entry.Device);
+        entry.Device = gamepad;
+        entry.ControllerLostAnnounced = false;
+        joinedGamepads.Add(gamepad);
+        Announce($"{entry.Name} is back on a new controller");
+        Sfx.Play(Sound.Join);
+        return true;
     }
 
     private bool Join(string controlScheme, InputDevice device)
@@ -186,7 +237,8 @@ public class MatchManager : MonoBehaviour
             PowerUps = input.GetComponent<BrawlPowerUps>(),
             Name = $"P{index + 1}",
             Color = playerColors.Length > 0 ? playerColors[index % playerColors.Length] : Color.white,
-            ControlScheme = controlScheme
+            ControlScheme = controlScheme,
+            Device = device
         };
         input.gameObject.name = $"Player {index + 1} ({controlScheme})";
         players.Add(entry);
@@ -204,7 +256,7 @@ public class MatchManager : MonoBehaviour
 
         DisablePlayerCameras(input.gameObject);
         PlaceAtSpawn(entry, GetSpawnPosition(index));
-        Announce($"{entry.Name} joined ({controlScheme})");
+        Announce($"{entry.Name} joined on {ControlHints.SchemeLabel(controlScheme)} - power-up: {ControlHints.Key(controlScheme, ControlHints.Action.UsePowerUp)}");
         Sfx.Play(Sound.Join);
         Vfx.Poof(player.transform.position, entry.Color);
         return true;

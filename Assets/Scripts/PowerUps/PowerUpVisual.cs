@@ -4,7 +4,8 @@ using UnityEngine;
 // Gives each power-up pickup its own shape so players can tell them apart at a glance. Uses the
 // models from GameArt (Dash = lightning bolt, Invulnerability = shield, Super Knockback = boxing
 // glove); without art it falls back to simple shapes (Speed Boost is always a green wheel).
-// The level (1-3) makes it bigger, glow brighter and adds one orbiting spark per level.
+// The level (1-3) is how many copies are stacked on top of each other (matching the stacked
+// icons in the HUD), and higher levels glow brighter.
 // Added by PowerUpSpawner; replaces the pickup's own mesh with the shape.
 [RequireComponent(typeof(PowerUpPickUp))]
 public class PowerUpVisual : MonoBehaviour
@@ -14,11 +15,10 @@ public class PowerUpVisual : MonoBehaviour
 
     [SerializeField] private float bobHeight = 0.2f;
     [SerializeField] private float bobSpeed = 2f;
-    [SerializeField] private float sparkOrbitSpeed = 200f;
+    [SerializeField] private float spinSpeed = 60f;
 
     private readonly List<Material> materials = new List<Material>();
     private Transform body;
-    private Transform sparks;
     private float bobOffset;
 
     public static Color ColorFor(PowerUpModifier powerUp)
@@ -45,29 +45,33 @@ public class PowerUpVisual : MonoBehaviour
         int level = Mathf.Clamp(powerUp.Level, 1, 3);
         Color color = ColorFor(powerUp);
         Material shapeMaterial = CreateMaterial(template, color, 0.25f + 0.35f * level);
-        Material sparkMaterial = CreateMaterial(template, Color.white, 1.5f);
 
         body = new GameObject("Shape").transform;
         body.SetParent(transform, false);
-        body.localScale = Vector3.one * (1.2f + 0.3f * (level - 1));
         bobOffset = Random.value * Mathf.PI * 2f;
-        BuildShape(powerUp, shapeMaterial);
 
-        // One spark per level circling the shape
-        sparks = new GameObject("Level Sparks").transform;
-        sparks.SetParent(body, false);
+        // The level is the number of copies stacked on top of each other (same as the HUD slots),
+        // centred on the pickup so its trigger still covers the whole stack
+        float spacing = 0.62f * StackScale;
         for (int i = 0; i < level; i++)
         {
-            float a = i * Mathf.PI * 2f / level;
-            Part(PrimitiveType.Sphere, sparks, new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * 0.75f, Vector3.zero, Vector3.one * 0.14f, sparkMaterial);
+            var copy = new GameObject($"Level {i + 1}").transform;
+            copy.SetParent(body, false);
+            copy.localPosition = Vector3.up * ((i - (level - 1) * 0.5f) * spacing);
+            copy.localScale = Vector3.one * StackScale;
+            // Alternate the turn a little so the copies read as separate pieces
+            copy.localRotation = Quaternion.Euler(0f, i * 25f, 0f);
+            BuildShape(powerUp, copy, shapeMaterial);
         }
     }
+
+    private const float StackScale = 1.1f;
 
     private void Update()
     {
         if (body == null) return;
         body.localPosition = Vector3.up * (Mathf.Sin(Time.time * bobSpeed + bobOffset) * bobHeight);
-        sparks.Rotate(Vector3.up, sparkOrbitSpeed * Time.deltaTime, Space.Self);
+        body.Rotate(Vector3.up, spinSpeed * Time.deltaTime, Space.Self);
     }
 
     private void OnDestroy()
@@ -89,12 +93,12 @@ public class PowerUpVisual : MonoBehaviour
         }
     }
 
-    private void BuildShape(PowerUpModifier powerUp, Material material)
+    private void BuildShape(PowerUpModifier powerUp, Transform body, Material material)
     {
         var model = ModelFor(powerUp);
         if (model != null)
         {
-            // Fit in world units, so multiply by the level scale already on `body`
+            // Fit in world units, so multiply by the scale already on this copy
             var fitted = ArtUtil.FitModel(model, body, 0.95f * body.lossyScale.x);
             foreach (var r in fitted.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             return;
