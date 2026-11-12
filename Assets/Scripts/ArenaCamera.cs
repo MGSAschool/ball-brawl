@@ -13,6 +13,8 @@ public class ArenaCamera : MonoBehaviour
     [SerializeField] private float smoothTime = 0.4f;
     [Tooltip("Screen shape the distances were tuned for. Narrower screens (4:3, portrait) pull back to keep the sides in view.")]
     [SerializeField] private float referenceAspect = 16f / 9f;
+    [Tooltip("In the lobby the camera shows the whole arena from this far back instead of following players.")]
+    [SerializeField] private float lobbyDistance = 40f;
 
     private Vector3 velocity;
     private Camera cam;
@@ -42,6 +44,13 @@ public class ArenaCamera : MonoBehaviour
 
         float spread = new Vector2(bounds.size.x, bounds.size.z).magnitude;
         float distance = any ? Mathf.Clamp(minDistance + spread * zoomPerUnitSpread, minDistance, maxDistance) : minDistance * 1.5f;
+
+        // Lobby: show off the whole arena while players join and warm up
+        if (match != null && match.State == MatchManager.MatchState.Lobby)
+        {
+            bounds.center = fallbackCenter;
+            distance = lobbyDistance;
+        }
 
         // Horizontal view shrinks with narrower screens, so back off by the same ratio
         float aspect = cam != null ? cam.aspect : referenceAspect;

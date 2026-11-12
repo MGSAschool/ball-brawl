@@ -39,13 +39,42 @@ public static class ControlHints
             default:
                 switch (action)
                 {
-                    case Action.Move: return "Left stick";
+                    case Action.Move: return "Stick / D-pad";
                     case Action.Jump: return "A";
                     case Action.UsePowerUp: return "B";
                     default: return "X";
                 }
         }
     }
+
+    // The key that joins the game with this scheme (keep in sync with MatchManager.HandleJoining)
+    public static string JoinKey(string scheme)
+    {
+        switch (scheme)
+        {
+            case "Keyboard": return "Space";
+            case "Arrows": return "Right Shift";
+            default: return "A";
+        }
+    }
+
+    // A key drawn as a key cap: light box behind the label. Gamepad face buttons get their
+    // usual colours (A green, B red, X blue, Y yellow) so they match what's printed on the pad.
+    public static string Cap(string key)
+    {
+        string tint;
+        switch (key)
+        {
+            case "A": tint = "#5BD16A"; break;
+            case "B": tint = "#FF6B5E"; break;
+            case "X": tint = "#4FA8FF"; break;
+            case "Y": tint = "#FFD84D"; break;
+            default: tint = "#FFFFFF"; break;
+        }
+        return $"<mark=#FFFFFF2E padding=14,14,6,6><color={tint}>{key}</color></mark>";
+    }
+
+    public static string CapFor(string scheme, Action action) => Cap(Key(scheme, action));
 
     public static string PowerUpName(PowerUpModifier powerUp)
     {
@@ -77,7 +106,7 @@ public static class ControlHints
         "Save Invulnerability for when you're about to be hit near the edge.",
         "Super Knockback lasts 10 seconds. Level III hits three times as hard as level I.",
         "Using a Dash power-up gives you a window of dashing (longer at higher levels). Press Dash to dash again after the cooldown.",
-        "Power-ups come in levels I to III. Bigger, brighter pickups with more sparks around them are stronger.",
+        "Power-ups come in levels 1 to 3: the more icons stacked on a pickup, the stronger it is.",
         "Dash back toward the middle if you get knocked close to the edge.",
         "Red, shaking floor is about to drop. Get off it!",
         "Coin Rush coins land near the edges. Big points, big risk.",
