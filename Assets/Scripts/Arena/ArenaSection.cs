@@ -104,7 +104,7 @@ public class ArenaSection : MonoBehaviour
         ClearFreeze();
         StayDown = true;
         Enter(SectionState.Gone);
-        rend.enabled = false;
+        SetVisible(false);
         col.enabled = false;
     }
 
@@ -117,7 +117,7 @@ public class ArenaSection : MonoBehaviour
         rb.position = homePosition + Vector3.down * distance;
         transform.position = rb.position;
         SetColor(baseColor);
-        rend.enabled = true;
+        SetVisible(true);
         col.enabled = true;
         Enter(SectionState.Rising);
     }
@@ -129,9 +129,17 @@ public class ArenaSection : MonoBehaviour
         Enter(SectionState.Solid);
         rb.position = homePosition;
         transform.position = homePosition;
-        rend.enabled = true;
+        SetVisible(true);
         col.enabled = true;
         SetColor(baseColor);
+    }
+
+    // Blends a solid, unfrozen section toward a colour (0 = its own colour); used for arena-wide
+    // warnings such as the storm
+    public void Tint(Color color, float amount)
+    {
+        if (State != SectionState.Solid || Freeze != FreezeState.None) return;
+        SetColor(Color.Lerp(baseColor, color, Mathf.Clamp01(amount)));
     }
 
     // Random point on this section's top surface (world space), kept away from the edges
@@ -224,7 +232,7 @@ public class ArenaSection : MonoBehaviour
                 rb.MovePosition(homePosition + Vector3.down * (fallDistance * t * t));
                 if (t >= 1f)
                 {
-                    rend.enabled = false;
+                    SetVisible(false);
                     col.enabled = false;
                     Enter(SectionState.Gone);
                 }
@@ -235,7 +243,7 @@ public class ArenaSection : MonoBehaviour
                 if (!StayDown && elapsed >= goneDuration)
                 {
                     SetColor(baseColor);
-                    rend.enabled = true;
+                    SetVisible(true);
                     col.enabled = true;
                     Enter(SectionState.Rising);
                 }
@@ -254,6 +262,13 @@ public class ArenaSection : MonoBehaviour
                 break;
             }
         }
+    }
+
+    // Shows or hides the section together with anything riding on it (e.g. the island's rock)
+    private void SetVisible(bool visible)
+    {
+        if (rend == null) rend = GetComponent<MeshRenderer>();
+        foreach (var r in GetComponentsInChildren<Renderer>(true)) r.enabled = visible;
     }
 
     private void SetColor(Color color)

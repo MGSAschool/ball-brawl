@@ -120,9 +120,9 @@ public class MatchHUD : MonoBehaviour
     private class PlayerCard
     {
         public TextMeshProUGUI Points, Coins, Status;
-        // Per power-up slot: the copies drawn behind its icon (level 2 shows 1 extra, level 3 shows 2)
-        public Image[][] Stacks = new Image[0][];
-        public Rect[] SlotRects = new Rect[0];
+        // Per power-up slot: the badge in its corner showing the level (1-3)
+        public Image[] Badges = new Image[0];
+        public TextMeshProUGUI[] BadgeTexts = new TextMeshProUGUI[0];
         public PowerupInventoryUI Box;
     }
 
@@ -349,7 +349,7 @@ public class MatchHUD : MonoBehaviour
     private void PlaceMenu(bool results)
     {
         var rect = (RectTransform)menu.transform;
-        Place(rect, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 160f), new Vector2(820f, 200f));
+        Place(rect, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 150f), new Vector2(820f, 260f));
         rect.localScale = Vector3.one * 0.7f;
     }
 
@@ -496,7 +496,7 @@ public class MatchHUD : MonoBehaviour
         // Power-ups and how to close, inside the card
         var footer = CreateText(content, "Footer", 12f, 24f, TextAlignmentOptions.Center, 0f);
         Anchor(footer.rectTransform, Rect.MinMaxRect(0f, 0f, 1f, 0.18f));
-        footer.text = "<color=#FFD64D>POWER-UPS</color>   Hold 2   |   Use fires the left one   |   More stacked icons = stronger\n" +
+        footer.text = "<color=#FFD64D>POWER-UPS</color>   Hold 2   |   Use fires the left one   |   The number (1-3) is its strength\n" +
                       $"<size=80%><color=#d8d0ff>Close</color> {ControlHints.Cap("H")} <color=#d8d0ff>/</color> {ControlHints.Cap("Select")} <color=#d8d0ff>or click the card</color></size>";
 
         guidePanel.SetActive(false);
@@ -637,15 +637,15 @@ public class MatchHUD : MonoBehaviour
             card.Coins.text = p.Coins.ToString();
             card.Status.text = Status(p);
 
-            // Level = how many icons are stacked in the slot (slot 1 is the oldest, used next)
+            // Level = the number in the slot's corner badge (slot 1 is the oldest, used next)
             if (p.PowerUps == null || card.Box == null) continue;
             var items = p.PowerUps.Items;
             bool stale = false;
-            for (int s = 0; s < card.Stacks.Length; s++)
+            for (int s = 0; s < card.Badges.Length; s++)
             {
                 var icon = card.Box.icons[s];
                 int level = s < items.Count && items[s] != null ? Mathf.Clamp(items[s].Level, 1, 3) : 0;
-                LayoutStack(card.SlotRects[s], level, icon, card.Stacks[s]);
+                ShowLevel(card.Badges[s], card.BadgeTexts[s], level > 0 && icon.enabled && icon.sprite != null ? level : 0);
                 stale |= icon.enabled != s < items.Count;
             }
             // A pickup grabbed on the frame the player spawned lands before the box's own Start
@@ -737,7 +737,7 @@ public class MatchHUD : MonoBehaviour
     }
 
     // Slots 2-3: the PowerupHUD prefab keeps filling its icons; we only move them into the frame
-    // and add the stacked copies that show the level
+    // and add the number badge that shows the level
     private void AttachPowerUpIcons(MatchManager.PlayerEntry entry, int index, RectTransform frame, PlayerCard card)
     {
         var ui = Instantiate(powerUpBoxPrefab, frame, false);
@@ -747,29 +747,36 @@ public class MatchHUD : MonoBehaviour
         // Redraw the icons when the match empties the inventory
         entry.PowerUps.Cleared += () => ui.SendMessage("RefreshUI", SendMessageOptions.DontRequireReceiver);
 
-        card.Stacks = new Image[ui.icons.Length][];
-        card.SlotRects = new Rect[ui.icons.Length];
+        card.Badges = new Image[ui.icons.Length];
+        card.BadgeTexts = new TextMeshProUGUI[ui.icons.Length];
         for (int s = 0; s < ui.icons.Length; s++)
         {
-            card.SlotRects[s] = Inset(InventorySlots[Mathf.Min(s + 1, InventorySlots.Length - 1)], 0.1f);
-
-            // Copies first, so they draw behind the real icon
-            card.Stacks[s] = new Image[2];
-            for (int k = 0; k < card.Stacks[s].Length; k++)
-            {
-                var copy = new GameObject($"Stack {k + 2}", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
-                copy.rectTransform.SetParent(frame, false);
-                copy.preserveAspect = true;
-                copy.raycastTarget = false;
-                copy.enabled = false;
-                card.Stacks[s][k] = copy;
-            }
+            Rect slot = Inset(InventorySlots[Mathf.Min(s + 1, InventorySlots.Length - 1)], 0.1f);
 
             var icon = ui.icons[s];
             icon.rectTransform.SetParent(frame, false);
             icon.preserveAspect = true;
             icon.enabled = false;
-            LayoutStack(card.SlotRects[s], 0, icon, card.Stacks[s]);
+            Anchor(icon.rectTransform, slot);
+
+            // Round badge over the bottom-right corner of the slot, drawn in front of the icon
+            var badge = new GameObject("Level", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+            badge.rectTransform.SetParent(frame, false);
+            badge.sprite = ArtUtil.Circle();
+            badge.preserveAspect = true;
+            badge.raycastTarget = false;
+            Anchor(badge.rectTransform, Rect.MinMaxRect(
+                slot.xMax - slot.width * 0.42f, slot.yMin - slot.height * 0.06f,
+                slot.xMax + slot.width * 0.06f, slot.yMin + slot.height * 0.42f));
+            var outline = badge.gameObject.AddComponent<Outline>();
+            outline.effectColor = new Color(0.1f, 0.05f, 0.15f, 0.9f);
+            outline.effectDistance = new Vector2(2f, -2f);
+            var number = CreateText(badge.rectTransform, "Number", 10f, 30f, TextAlignmentOptions.Center, 0f);
+            number.outlineWidth = 0.25f;
+            number.outlineColor = new Color32(30, 15, 40, 255);
+            card.Badges[s] = badge;
+            card.BadgeTexts[s] = number;
+            ShowLevel(badge, number, 0);
         }
         // Hide the prefab's own frame; its script stays alive to update the icons
         foreach (var graphic in ui.GetComponentsInChildren<Graphic>(true))
@@ -778,31 +785,21 @@ public class MatchHUD : MonoBehaviour
         }
     }
 
-    // Level 1: one icon filling the slot. Level 2-3: that many smaller icons stacked upward, only
-    // just overlapping so each one is easy to count; the real icon in front at the bottom.
-    private static void LayoutStack(Rect slot, int level, Image icon, Image[] copies)
+    // Strength badge: hidden for an empty slot, otherwise the level number on a colour that
+    // warms up with it (1 green, 2 orange, 3 red)
+    private static readonly Color[] LevelColors =
     {
-        float size = level >= 3 ? 0.4f : level == 2 ? 0.54f : 1f;
-        float step = level >= 3 ? 0.3f : 0.46f;
-        float total = size + Mathf.Max(0, level - 1) * step;
-        float bottom = (1f - total) * 0.5f;
-        float left = (1f - size) * 0.5f;
+        new Color(0.36f, 0.82f, 0.42f), new Color(1f, 0.62f, 0.2f), new Color(0.93f, 0.25f, 0.3f)
+    };
 
-        Rect At(int k) => Rect.MinMaxRect(
-            slot.xMin + left * slot.width, slot.yMin + (bottom + k * step) * slot.height,
-            slot.xMin + (left + size) * slot.width, slot.yMin + (bottom + k * step + size) * slot.height);
-
-        Anchor(icon.rectTransform, At(0));
-        for (int k = 0; k < copies.Length; k++)
-        {
-            bool show = level >= k + 2 && icon.enabled && icon.sprite != null;
-            copies[k].enabled = show;
-            if (!show) continue;
-            copies[k].sprite = icon.sprite;
-            float shade = k == 0 ? 0.85f : 0.72f;
-            copies[k].color = new Color(shade, shade, shade, 1f);
-            Anchor(copies[k].rectTransform, At(k + 1));
-        }
+    private static void ShowLevel(Image badge, TextMeshProUGUI number, int level)
+    {
+        bool show = level > 0;
+        badge.enabled = show;
+        number.enabled = show;
+        if (!show) return;
+        badge.color = LevelColors[level - 1];
+        number.text = level.ToString();
     }
 
     // --- Results ---

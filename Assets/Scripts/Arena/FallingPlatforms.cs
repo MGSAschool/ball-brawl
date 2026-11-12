@@ -4,18 +4,23 @@ using UnityEngine.Serialization;
 
 // "Falling Platforms" stage obstacle. At runtime the round arena is rebuilt as a small middle
 // disc plus rings of curved sections; every piece, the middle included, can fall.
-// Falls speed up every `speedUpEvery` seconds. A match runs in three phases (timer counts down):
+// Falls speed up every `speedUpEvery` seconds. A Brawl match runs in phases (timer counts down):
 //   Normal    - groups of sections crumble into the void and later rise back.
 //   Permanent - from `permanentFallsAt` left, anything that falls stays gone.
-//   Island    - at `islandAppearsAt` left, a cluster of pads rises beside the arena across a
-//               jumpable gap, respawns move onto it, and the old arena keeps crumbling until it
-//               is gone `arenaGoneBy` seconds before the end. Island pads take turns freezing
-//               into slippery ice (flashing blue first, like the red fall warning).
+//   Island    - at `islandAppearsAt` left, a smaller copy of the arena (same rings and colours, on
+//               a floating rock) rises beside it across a jumpable gap and respawns move onto it.
+//               The old arena keeps crumbling down to about `ruinsFraction` of its pieces.
+//               Island pieces take turns freezing into slippery ice (flashing blue first).
+//   Storm     - at `stormAt` (+ the warning) left, the old arena glows, crackles and the sky
+//               darkens while a countdown runs. Then lightning strikes everyone still over the old
+//               arena: they respawn on the island at no cost to their score. A shield blocks it.
+//   Ruins     - the old arena stops falling and stays exactly as the storm left it, so players
+//               can jump back. A bonus coin rush lands on the ruins to make it worth the risk.
 // Put this on the arena object: its renderer and collider are only used for size,
 // material and as the edit-time preview.
 public class FallingPlatforms : MonoBehaviour
 {
-    private enum Phase { Normal, Permanent, Island }
+    private enum Phase { Normal, Permanent, Island, Storm, Ruins }
 
     [Header("Layout")]
     [Tooltip("Radius of the middle area. It is split into a small disc plus a ring of pieces, and all of it can fall.")]
@@ -55,36 +60,47 @@ public class FallingPlatforms : MonoBehaviour
     [Header("Final Minute (seconds left on the match timer)")]
     [SerializeField] private float permanentFallsAt = 80f;
     [SerializeField] private float islandAppearsAt = 60f;
-    [Tooltip("The old arena is fully gone this many seconds before the end.")]
-    [SerializeField] private float arenaGoneBy = 10f;
     [SerializeField] private float finalPhaseMaxInterval = 4f;
 
+    [Header("Storm")]
+    [Tooltip("Seconds left on the timer when lightning strikes the old arena.")]
+    [SerializeField] private float stormAt = 40f;
+    [Tooltip("Countdown before the strike, so players can get across.")]
+    [SerializeField] private float stormWarning = 5f;
+    [Tooltip("Share of the old arena's pieces still standing when the storm hits. They stay as the ruins.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float ruinsFraction = 0.35f;
+    [SerializeField] private Color stormColor = new Color(0.55f, 0.35f, 1f);
+    [Tooltip("How dark the sun gets during the countdown (1 = no change).")]
+    [Range(0f, 1f)]
+    [SerializeField] private float stormSunDim = 0.45f;
+    [SerializeField] private CoinRush coinRush;
+    [Tooltip("Bonus coins scattered on the ruins after the strike.")]
+    [SerializeField] private int ruinsCoins = 12;
+    [SerializeField] private float ruinsCoinDuration = 15f;
+
     [Header("Island")]
-    [Tooltip("Middle pad of the island, where respawns land.")]
-    [SerializeField] private float hubRadius = 3.5f;
-    [Tooltip("Inner and outer radius of the ring of pads around the hub. The space between them and the hub is a jump.")]
-    [SerializeField] private Vector2 padRing = new Vector2(5.5f, 8.5f);
-    [SerializeField] private int padCount = 6;
-    [Tooltip("Angle each pad covers; the rest of each slice is a gap to jump.")]
-    [SerializeField] private float padArcDegrees = 40f;
-    [Tooltip("Every other pad sits this much higher (jump height is about 1.2m).")]
-    [SerializeField] private float raisedPadHeight = 0.6f;
-    [Tooltip("Gap between the arena edge and the nearest pad. ~3m needs a jump; a running jump clears about 6m.")]
+    [Tooltip("The island is a smaller copy of the arena: a middle disc plus rings of pieces in the same colours.")]
+    [SerializeField] private float islandRadius = 8f;
+    [SerializeField] private float islandDiscRadius = 2.5f;
+    [SerializeField] private int islandRingCount = 3;
+    [Tooltip("Rough arc length of each island piece, in metres.")]
+    [SerializeField] private float islandSectionLength = 4.5f;
+    [Tooltip("Gap between the arena edge and the island. ~3m needs a jump; a running jump clears about 6m.")]
     [SerializeField] private float islandGap = 3f;
     [SerializeField] private float islandRiseDuration = 3f;
     [Tooltip("Pick a different side of the arena for the island every match.")]
     [SerializeField] private bool randomizeIslandSide = true;
     [Tooltip("Island direction in degrees when not randomized (90 = far side from the default camera).")]
     [SerializeField] private float islandAngle = 90f;
-    [Tooltip("Optional model for the late-match platform (e.g. a floating island). When set it replaces the hub-and-pads layout. " +
-             "Its pivot should sit at the middle of its footprint, level with the ground players stand on.")]
+    [Tooltip("Optional rock the island sits on (e.g. one of the stadium's floating islands). It is scaled to fit under the island and is only for looks.")]
     [SerializeField] private Mesh islandModel;
     [SerializeField] private Material islandModelMaterial;
-    [SerializeField] private float islandModelScale = 0.75f;
 
     [Header("Island Freezing")]
     [SerializeField] private Vector2 freezeInterval = new Vector2(4f, 7f);
-    [SerializeField] private Vector2Int padsPerFreeze = new Vector2Int(1, 2);
+    [Tooltip("Island pieces that freeze together (min, max).")]
+    [SerializeField] private Vector2Int padsPerFreeze = new Vector2Int(3, 5);
     [SerializeField] private float firstFreezeDelay = 5f;
     [SerializeField] private float freezeWarningDuration = 2f;
     [SerializeField] private float frozenDuration = 5f;
@@ -116,6 +132,12 @@ public class FallingPlatforms : MonoBehaviour
     private readonly List<ArenaSection> islandPads = new List<ArenaSection>();
     private readonly List<Vector3> islandPadOffsets = new List<Vector3>();
     private Transform islandRoot;
+    private float stormStart;
+    private int lastStormCount;
+    private float treasureAt;
+    private Light sun;
+    private float sunIntensity;
+    private float flashUntil;
     private Transform[] islandSpawns;
     // How far the island reaches from its center toward the arena
     private float islandReach;
@@ -135,9 +157,12 @@ public class FallingPlatforms : MonoBehaviour
     private float CurrentWarning => Mathf.Max(minWarningDuration, warningDuration * Mathf.Pow(timingMultiplier, speedLevel));
     private float CurrentFall => fallDuration * Mathf.Pow(timingMultiplier, speedLevel);
 
+    private bool IslandUp => phase >= Phase.Island;
+
     private void Awake()
     {
         if (match == null) match = FindAnyObjectByType<MatchManager>();
+        if (coinRush == null) coinRush = FindAnyObjectByType<CoinRush>();
         BuildSections();
     }
 
@@ -190,16 +215,154 @@ public class FallingPlatforms : MonoBehaviour
 
         if (finalPhases && phase == Phase.Normal && timeLeft <= permanentFallsAt) EnterPermanentPhase();
         if (finalPhases && phase == Phase.Permanent && timeLeft <= islandAppearsAt) RaiseIsland();
+        if (finalPhases && phase == Phase.Island && timeLeft <= stormAt + stormWarning) BeginStorm();
 
-        if (phase == Phase.Island && Time.time >= nextFreezeTime)
+        if (IslandUp && Time.time >= nextFreezeTime)
         {
             nextFreezeTime = Time.time + Random.Range(freezeInterval.x, freezeInterval.y);
             FreezePads();
         }
 
+        UpdateSun();
+        if (phase == Phase.Storm)
+        {
+            UpdateStorm();
+            return;
+        }
+        if (phase == Phase.Ruins)
+        {
+            // The ruins stay as they are; a moment after the strike, treasure lands on them
+            if (treasureAt > 0f && Time.time >= treasureAt)
+            {
+                treasureAt = 0f;
+                if (coinRush != null)
+                {
+                    coinRush.StartRushNow("TREASURE ON THE RUINS! Jump back for coins!", ruinsCoins,
+                        Mathf.Min(ruinsCoinDuration, Mathf.Max(1f, timeLeft - 1f)));
+                }
+            }
+            return;
+        }
+
         if (Time.time < nextFallTime) return;
         nextFallTime = Time.time + NextInterval(timeLeft);
         DropGroup();
+    }
+
+    // --- Storm ---
+    private void BeginStorm()
+    {
+        phase = Phase.Storm;
+        stormStart = Time.time;
+        lastStormCount = -1;
+        sun = RenderSettings.sun;
+        if (sun != null) sunIntensity = sun.intensity;
+        Sfx.Play(Sound.Rumble, Center, 1f, 0.6f);
+    }
+
+    private void UpdateStorm()
+    {
+        float elapsed = Time.time - stormStart;
+        float t = Mathf.Clamp01(elapsed / stormWarning);
+
+        // The countdown, once a second
+        int count = Mathf.CeilToInt(stormWarning - elapsed);
+        if (count != lastStormCount && count > 0)
+        {
+            lastStormCount = count;
+            match.Announce($"STORM IN {count}! Get to the new platform!");
+            Sfx.Play(Sound.Countdown, 0.7f, 0.8f);
+            Sfx.Play(Sound.Rumble, Center, 0.5f + 0.4f * t, 0.6f);
+            Vfx.Shake(0.15f + 0.3f * t);
+        }
+
+        // The old floor throbs storm-purple, faster and stronger as the strike gets closer
+        float pulse = 0.5f + 0.5f * Mathf.Sin(elapsed * Mathf.Lerp(4f, 16f, t));
+        float glow = Mathf.Lerp(0.45f, 0.85f, t) * Mathf.Lerp(0.65f, 1f, pulse);
+        foreach (var section in sections) section.Tint(stormColor, glow);
+
+        // Stray lightning crackles across it
+        if (Random.value < Time.deltaTime * Mathf.Lerp(1.5f, 6f, t) && TryGetRandomSolidPoint(0f, out var spot))
+        {
+            Vfx.Zap(spot, stormColor);
+            Sfx.Play(Sound.Zap, spot, 0.35f, Random.Range(0.8f, 1.2f));
+        }
+
+        if (elapsed >= stormWarning) StrikeOldArena();
+    }
+
+    private void StrikeOldArena()
+    {
+        phase = Phase.Ruins;
+        flashUntil = Time.time + 0.15f;
+        Vfx.Shake(1f);
+        Sfx.Play(Sound.Explosion, Center, 1f, 0.7f);
+        foreach (var section in sections) section.Tint(stormColor, 0f);
+
+        int struck = 0;
+        string blocked = null;
+        foreach (var entry in match.Players)
+        {
+            if (entry.Player == null || entry.IsRespawning || !IsOverOldArena(entry.Player.transform.position)) continue;
+            Vector3 at = entry.Player.transform.position;
+            Vfx.Zap(at, stormColor);
+            if (entry.Player.IsInvulnerable)
+            {
+                // A shield shrugs the lightning off, like the Staph It! zap
+                Sfx.Play(Sound.Blocked, at, 1f);
+                blocked = entry.Name;
+                continue;
+            }
+            Sfx.Play(Sound.Zap, at, 1f);
+            Vfx.Explosion(at, 3f);
+            match.KnockOutWithoutPenalty(entry.Player);
+            struck++;
+        }
+
+        if (blocked != null) match.Announce($"{blocked}'s shield blocked the storm!");
+        else if (struck > 0) match.Announce(struck == 1 ? "The storm struck a player! The old arena is now ruins." : $"The storm struck {struck} players! The old arena is now ruins.");
+        else match.Announce("The storm passed! The old arena is now ruins.");
+        treasureAt = Time.time + 3f;
+    }
+
+    // From the storm on, the area the camera should keep in view: the new platform and the
+    // middle of the old arena (players' own spread pulls in the rest)
+    public bool TryGetFinaleView(out Bounds view)
+    {
+        view = default;
+        if (phase < Phase.Storm || islandRoot == null) return false;
+        view = new Bounds(islandRoot.position, Vector3.one * islandRadius * 2f);
+        view.Encapsulate(new Bounds(Center, Vector3.one * Radius));
+        return true;
+    }
+
+    // Anywhere above the old arena's footprint, standing or mid-jump
+    private bool IsOverOldArena(Vector3 position)
+    {
+        Vector3 offset = position - Center;
+        offset.y = 0f;
+        return offset.magnitude <= Radius + 0.75f;
+    }
+
+    // The sky darkens through the countdown, flashes with the strike, then clears up
+    private void UpdateSun()
+    {
+        if (sun == null) return;
+        float target = sunIntensity;
+        if (phase == Phase.Storm) target = sunIntensity * Mathf.Lerp(1f, stormSunDim, Mathf.Clamp01((Time.time - stormStart) / stormWarning));
+        if (Time.time < flashUntil)
+        {
+            sun.intensity = sunIntensity * 3f;
+            return;
+        }
+        sun.intensity = Mathf.MoveTowards(sun.intensity, target, sunIntensity * 2f * Time.deltaTime);
+        if (phase != Phase.Storm && Mathf.Approximately(sun.intensity, sunIntensity)) sun = null;
+    }
+
+    private void RestoreSun()
+    {
+        if (sun != null) sun.intensity = sunIntensity;
+        sun = null;
     }
 
     private void EnterPermanentPhase()
@@ -222,18 +385,22 @@ public class FallingPlatforms : MonoBehaviour
         {
             if (entry.Player != null && !entry.Player.TryGetComponent<IceSlide>(out _)) entry.Player.gameObject.AddComponent<IceSlide>();
         }
-        match.Announce("NEW PLATFORM! Jump to it before the arena falls!");
+        match.Announce("NEW PLATFORM! Get over there before the storm hits!");
     }
+
+    // Pieces of the old arena that should still be standing when the storm hits
+    private int RuinsToKeep => Mathf.CeilToInt(sections.Count * ruinsFraction);
 
     private float NextInterval(float timeLeft)
     {
         if (phase != Phase.Island) return Random.Range(fallInterval.x, fallInterval.y) * IntervalScale;
 
-        // Final phase: pace the drops so the old arena is gone `arenaGoneBy` seconds before the end
-        int solid = sections.FindAll(s => s.IsSolid).Count;
+        // Island phase: pace the drops so the arena is down to the ruins just as the storm comes
+        int extra = sections.FindAll(s => s.IsSolid).Count - RuinsToKeep;
+        if (extra <= 0) return float.PositiveInfinity;
         float averageGroup = (piecesPerFall.x + piecesPerFall.y) * 0.5f;
-        int groupsLeft = Mathf.Max(1, Mathf.CeilToInt(solid / Mathf.Max(1f, averageGroup)));
-        float timeForDrops = timeLeft - arenaGoneBy - CurrentWarning;
+        int groupsLeft = Mathf.Max(1, Mathf.CeilToInt(extra / Mathf.Max(1f, averageGroup)));
+        float timeForDrops = timeLeft - stormAt - stormWarning - CurrentWarning;
         return Mathf.Clamp(timeForDrops / groupsLeft, 0.5f, finalPhaseMaxInterval * IntervalScale);
     }
 
@@ -254,6 +421,12 @@ public class FallingPlatforms : MonoBehaviour
             int room = maxDownAtOnce + speedLevel * extraDownPerSpeedUp - down;
             if (room < piecesPerFall.x) return;
             count = Mathf.Min(count, room);
+        }
+        else if (phase == Phase.Island)
+        {
+            // Never eat into the ruins
+            count = Mathf.Min(count, candidates.Count - RuinsToKeep);
+            if (count <= 0) return;
         }
         count = Mathf.Min(count, candidates.Count);
 
@@ -294,6 +467,8 @@ public class FallingPlatforms : MonoBehaviour
     {
         phase = Phase.Normal;
         speedLevel = 0;
+        treasureAt = 0f;
+        RestoreSun();
         foreach (var section in sections) section.ResetImmediate();
         if (match != null) match.ClearSpawnOverride();
         if (islandRoot != null)
@@ -326,7 +501,7 @@ public class FallingPlatforms : MonoBehaviour
     private Vector3? FindFallbackSpawn()
     {
         // Island spawns can fail the floor check while the island is still rising; it'll be there in time
-        if (phase == Phase.Island) return islandSpawns[Random.Range(0, islandSpawns.Length)].position;
+        if (IslandUp) return islandSpawns[Random.Range(0, islandSpawns.Length)].position;
         if (TryGetRandomSolidPoint(0f, out var point)) return point + Vector3.up * 1.4f;
         return null;
     }
@@ -430,113 +605,78 @@ public class FallingPlatforms : MonoBehaviour
         return color;
     }
 
+    // Late-match island: a smaller copy of the arena (middle disc plus rings of pieces in the same
+    // colours and light/dark pattern), optionally sitting on a floating rock
     private void BuildIsland(Material material, PhysicsMaterial physicsMaterial, Color baseColor)
     {
         islandRoot = new GameObject("Island").transform;
         islandRoot.SetParent(transform.parent, false);
         islandRoot.position = Center;
+        islandReach = islandRadius;
 
-        if (islandModel != null) BuildModelIsland(material, physicsMaterial);
-        else BuildPadIsland(material, physicsMaterial, baseColor);
+        var middle = AddIslandPad("Island Middle", 0f, islandDiscRadius, 0f, Mathf.PI * 2f,
+            material, physicsMaterial, FloorColor(0, 0, baseColor));
+
+        int rings = Mathf.Max(1, islandRingCount);
+        float ringWidth = (islandRadius - islandDiscRadius) / rings;
+        int colorCount = ringColors != null ? ringColors.Length : 0;
+        for (int ring = 0; ring < rings; ring++)
+        {
+            float r0 = islandDiscRadius + ring * ringWidth;
+            float r1 = r0 + ringWidth;
+            int count = Mathf.Max(3, Mathf.RoundToInt(Mathf.PI * (r0 + r1) / Mathf.Max(1f, islandSectionLength)));
+            if (alternateShade > 0f && count % 2 == 1) count++;
+            float offset = ring * 0.5f * (Mathf.PI * 2f / count);
+            // Same colours as the arena from the middle out, with its tan track always on the rim
+            int colorIndex = ring == rings - 1 && colorCount > 0 ? colorCount - 1 : ring + 1;
+            for (int i = 0; i < count; i++)
+            {
+                float a0 = offset + i * Mathf.PI * 2f / count;
+                AddIslandPad($"Island Ring {ring + 1} Piece {i + 1}", r0, r1, a0, a0 + Mathf.PI * 2f / count,
+                    material, physicsMaterial, FloorColor(colorIndex, i, baseColor));
+            }
+        }
+
+        // The rock rides along with the middle piece, so it rises with the island
+        if (islandModel != null) AddRockBase(middle.transform);
+
+        islandSpawns = new Transform[4];
+        for (int i = 0; i < islandSpawns.Length; i++)
+        {
+            float a = i * Mathf.PI * 0.5f + Mathf.PI * 0.25f;
+            var spawn = new GameObject($"Island Spawn {i + 1}").transform;
+            spawn.SetParent(islandRoot, false);
+            // On the first ring, half a ball radius up, like the arena spawn points
+            float r = islandDiscRadius + ringWidth * 0.5f;
+            spawn.localPosition = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * r + Vector3.up * 1.4f;
+            islandSpawns[i] = spawn;
+        }
     }
 
-    // Late-match island from a model (e.g. one of the stadium's floating islands): one solid platform
-    private void BuildModelIsland(Material fallbackMaterial, PhysicsMaterial physicsMaterial)
+    // Scales the rock model to sit just under the island, a little wider so its grass shows as a rim
+    private void AddRockBase(Transform parent)
     {
-        var go = new GameObject("Floating Island", typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider), typeof(Rigidbody), typeof(ArenaSection));
-        go.transform.SetParent(islandRoot, false);
-        go.transform.localScale = Vector3.one * islandModelScale;
-        go.GetComponent<MeshFilter>().sharedMesh = islandModel;
-        go.GetComponent<MeshRenderer>().sharedMaterial = islandModelMaterial != null ? islandModelMaterial : fallbackMaterial;
-        var meshCollider = go.GetComponent<MeshCollider>();
-        meshCollider.sharedMesh = islandModel;
-        meshCollider.sharedMaterial = physicsMaterial;
+        var rock = new GameObject("Rock Base", typeof(MeshFilter), typeof(MeshRenderer)).transform;
+        rock.SetParent(parent, false);
+        rock.GetComponent<MeshFilter>().sharedMesh = islandModel;
+        rock.GetComponent<MeshRenderer>().sharedMaterial = islandModelMaterial;
 
-        // Farthest point from the pivot, so the gap holds whichever way the island is turned
-        float reach = 0f;
-        foreach (var v in islandModel.vertices) reach = Mathf.Max(reach, new Vector2(v.x, v.z).magnitude);
-        islandReach = reach * islandModelScale;
+        Bounds bounds = islandModel.bounds;
+        float reach = Mathf.Max(0.01f, Mathf.Max(bounds.extents.x, bounds.extents.z));
+        float scale = islandRadius * 1.12f / reach;
+        rock.localScale = Vector3.one * scale;
+        // Top of the rock tucked under the floor pieces
+        rock.localPosition = new Vector3(-bounds.center.x * scale, -thickness * 0.6f - bounds.max.y * scale, -bounds.center.z * scale);
+    }
 
-        var pad = go.GetComponent<ArenaSection>();
-        // White keeps the model's own texture; warnings and ice tint over it
-        pad.Init(0f, islandReach, 0f, Mathf.PI * 2f, Color.white, warningColor);
+    private ArenaSection AddIslandPad(string name, float r0, float r1, float a0, float a1,
+        Material material, PhysicsMaterial physicsMaterial, Color color)
+    {
+        var pad = CreateSection(islandRoot, name, r0, r1, a0, a1, material, physicsMaterial, color, addToArena: false);
         pad.CanFall = false;
         islandPads.Add(pad);
         islandPadOffsets.Add(Vector3.zero);
-
-        // Spawns around the middle, resting on whatever the ground height is there (the model isn't flat)
-        islandSpawns = new Transform[4];
-        for (int i = 0; i < islandSpawns.Length; i++)
-        {
-            float a = i * Mathf.PI * 0.5f + Mathf.PI * 0.25f;
-            Vector3 local = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * (islandReach * 0.4f);
-            float ground = TopHeightAt(islandModel, local / islandModelScale) * islandModelScale;
-            var spawn = new GameObject($"Island Spawn {i + 1}").transform;
-            spawn.SetParent(islandRoot, false);
-            spawn.localPosition = local + Vector3.up * (ground + 1.4f);
-            islandSpawns[i] = spawn;
-        }
-    }
-
-    // Highest point of the mesh straight above/below a local XZ point (0 if the point misses the mesh)
-    private static float TopHeightAt(Mesh mesh, Vector3 point)
-    {
-        var vertices = mesh.vertices;
-        var triangles = mesh.triangles;
-        float best = float.NegativeInfinity;
-        var p = new Vector2(point.x, point.z);
-        for (int t = 0; t < triangles.Length; t += 3)
-        {
-            Vector3 a = vertices[triangles[t]], b = vertices[triangles[t + 1]], c = vertices[triangles[t + 2]];
-            Vector2 a2 = new Vector2(a.x, a.z), b2 = new Vector2(b.x, b.z), c2 = new Vector2(c.x, c.z);
-            float area = (b2.x - a2.x) * (c2.y - a2.y) - (c2.x - a2.x) * (b2.y - a2.y);
-            if (Mathf.Abs(area) < 1e-6f) continue;
-            float u = ((b2.x - p.x) * (c2.y - p.y) - (c2.x - p.x) * (b2.y - p.y)) / area;
-            float v = ((c2.x - p.x) * (a2.y - p.y) - (a2.x - p.x) * (c2.y - p.y)) / area;
-            float w = 1f - u - v;
-            if (u < 0f || v < 0f || w < 0f) continue;
-            best = Mathf.Max(best, u * a.y + v * b.y + w * c.y);
-        }
-        return float.IsNegativeInfinity(best) ? 0f : best;
-    }
-
-    // Late-match island: a hub pad ringed by smaller curved pads with gaps to jump, some raised
-    private void BuildPadIsland(Material material, PhysicsMaterial physicsMaterial, Color baseColor)
-    {
-        islandReach = padRing.y;
-        AddIslandPad("Island Hub", 0f, hubRadius, 0f, Mathf.PI * 2f, 0f, material, physicsMaterial, baseColor);
-
-        float arc = Mathf.Clamp(padArcDegrees, 5f, 360f / Mathf.Max(1, padCount)) * Mathf.Deg2Rad;
-        for (int i = 0; i < padCount; i++)
-        {
-            // Pad 1 is centered on local +X, which PlaceIsland turns toward the arena
-            float mid = i * Mathf.PI * 2f / padCount;
-            float height = i % 2 == 1 ? raisedPadHeight : 0f;
-            AddIslandPad($"Island Pad {i + 1}", padRing.x, padRing.y, mid - arc * 0.5f, mid + arc * 0.5f, height,
-                material, physicsMaterial, baseColor);
-        }
-
-        islandSpawns = new Transform[4];
-        for (int i = 0; i < islandSpawns.Length; i++)
-        {
-            float a = i * Mathf.PI * 0.5f + Mathf.PI * 0.25f;
-            var spawn = new GameObject($"Island Spawn {i + 1}").transform;
-            spawn.SetParent(islandRoot, false);
-            // Half a ball radius above the hub, like the arena spawn points
-            spawn.localPosition = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * (hubRadius * 0.55f) + Vector3.up * 1.4f;
-            islandSpawns[i] = spawn;
-        }
-    }
-
-    private void AddIslandPad(string name, float r0, float r1, float a0, float a1, float height,
-        Material material, PhysicsMaterial physicsMaterial, Color baseColor)
-    {
-        var pad = CreateSection(islandRoot, name, r0, r1, a0, a1, material, physicsMaterial, baseColor, addToArena: false);
-        pad.CanFall = false;
-        Vector3 offset = Vector3.up * height;
-        pad.transform.localPosition = offset;
-        islandPads.Add(pad);
-        islandPadOffsets.Add(offset);
+        return pad;
     }
 
     private ArenaSection CreateSection(Transform root, string name, float r0, float r1, float a0, float a1,

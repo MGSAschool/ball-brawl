@@ -456,6 +456,21 @@ public class MatchManager : MonoBehaviour
             }
         }
 
+        StartRespawn(entry);
+    }
+
+    // Takes a player out without scoring it either way (e.g. struck by the arena storm); they
+    // respawn like after a fall
+    public void KnockOutWithoutPenalty(BrawlPlayer player)
+    {
+        var entry = FindEntry(player);
+        if (entry == null || entry.IsRespawning) return;
+        Vfx.KnockOutFlare(player.transform.position, entry.Color);
+        StartRespawn(entry);
+    }
+
+    private void StartRespawn(PlayerEntry entry)
+    {
         Hide(entry);
         entry.IsRespawning = true;
         entry.RespawnAt = Time.time + respawnDelay;

@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InvulnerablePowerUp
   duration: 16
   weight: 10
-  sprite: {fileID: 21300000, guid: 38e43e99f4f35cc4b8ee8843cab63a04, type: 3}
+  sprite: {fileID: 21300000, guid: 1b89626d60349f04da4e69d2ee185bb5, type: 3}
   level: 3

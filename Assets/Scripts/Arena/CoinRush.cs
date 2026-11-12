@@ -78,15 +78,27 @@ public class CoinRush : MonoBehaviour
         }
     }
 
-    private void StartRush()
+    // Starts a rush right away (ending any running one), e.g. treasure on the ruins after the storm.
+    // Coins can land anywhere on the solid floor, not just the outer rings.
+    public void StartRushNow(string announcement, int coinCount, float duration)
+    {
+        if (!matchRunning) return;
+        if (IsActive) EndRush(false);
+        StartRush(0f, coinCount, duration);
+        match.Announce(announcement);
+    }
+
+    private void StartRush() => StartRush(minSpawnRadius, coinsPerRush, rushDuration);
+
+    private void StartRush(float minRadius, int coinCount, float duration)
     {
         if (coinPrefab == null) return;
 
         IsActive = true;
-        rushEndsAt = Time.time + rushDuration;
-        for (int i = 0; i < coinsPerRush; i++)
+        rushEndsAt = Time.time + duration;
+        for (int i = 0; i < coinCount; i++)
         {
-            if (TryGetSpawnPoint(out Vector3 floorPoint))
+            if (TryGetSpawnPoint(minRadius, out Vector3 floorPoint))
             {
                 var coin = Instantiate(coinPrefab, floorPoint + Vector3.up * heightAboveFloor, Quaternion.identity, transform);
                 if (coin.GetComponent<DespawnWhenUnsupported>() == null) coin.gameObject.AddComponent<DespawnWhenUnsupported>();
@@ -109,11 +121,11 @@ public class CoinRush : MonoBehaviour
         nextRushAt = Time.time + Random.Range(rushInterval.x, rushInterval.y);
     }
 
-    private bool TryGetSpawnPoint(out Vector3 point)
+    private bool TryGetSpawnPoint(float minRadius, out Vector3 point)
     {
         if (platforms != null)
         {
-            return platforms.TryGetRandomSolidPoint(minSpawnRadius, out point);
+            return platforms.TryGetRandomSolidPoint(minRadius, out point);
         }
 
         // No segmented arena: pick a spot in the ring and drop a ray onto whatever floor is there
@@ -121,7 +133,7 @@ public class CoinRush : MonoBehaviour
         for (int attempt = 0; attempt < 10; attempt++)
         {
             float angle = Random.value * Mathf.PI * 2f;
-            float r = Mathf.Sqrt(Mathf.Lerp(minSpawnRadius * minSpawnRadius, fallbackRadius * fallbackRadius, Random.value));
+            float r = Mathf.Sqrt(Mathf.Lerp(minRadius * minRadius, fallbackRadius * fallbackRadius, Random.value));
             Vector3 above = center + new Vector3(Mathf.Cos(angle) * r, 30f, Mathf.Sin(angle) * r);
             if (Physics.Raycast(above, Vector3.down, out var hit, 60f, ~0, QueryTriggerInteraction.Ignore) &&
                 hit.collider.GetComponentInParent<BrawlPlayer>() == null)

@@ -1,7 +1,8 @@
 using UnityEngine;
 
 // Shared local-multiplayer camera: keeps its scene rotation and pulls back to frame every
-// player on the platform. Looks at the arena center when nobody is in play.
+// player on the platform. Looks at the arena center when nobody is in play. In the finale it
+// also keeps the new platform and the ruins of the old arena in view.
 public class ArenaCamera : MonoBehaviour
 {
     [SerializeField] private MatchManager match;
@@ -18,10 +19,12 @@ public class ArenaCamera : MonoBehaviour
 
     private Vector3 velocity;
     private Camera cam;
+    private FallingPlatforms arena;
 
     private void Awake()
     {
         if (match == null) match = FindAnyObjectByType<MatchManager>();
+        arena = FindAnyObjectByType<FallingPlatforms>();
         cam = GetComponent<Camera>();
     }
 
@@ -40,6 +43,13 @@ public class ArenaCamera : MonoBehaviour
                 else bounds.Encapsulate(p.Player.transform.position);
                 any = true;
             }
+        }
+
+        // Finale: keep the storm and the ruins in view as well as the new platform, so players can
+        // see the treasure worth jumping back for
+        if (any && match.State == MatchManager.MatchState.Playing && arena != null && arena.TryGetFinaleView(out var finale))
+        {
+            bounds.Encapsulate(finale);
         }
 
         float spread = new Vector2(bounds.size.x, bounds.size.z).magnitude;

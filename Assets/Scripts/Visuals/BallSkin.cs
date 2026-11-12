@@ -3,7 +3,8 @@ using UnityEngine;
 
 // Dresses the player's ball: swaps the plain sphere for the character ball (one per player slot)
 // and shows props for active power-ups: a shield bubble while invulnerable, a boxing glove for
-// Super Knockback and a bolt over its head while Dash is running.
+// Super Knockback, a spinning lightning bolt over its head during Speed Boost and a glowing arrow
+// pointing the way it's going while Dash is running.
 // The character rolls like a real ball, face and all. BrawlPlayer keeps the rigidbody from
 // rotating (steering needs that), so the spin is simulated here: on the ground friction drives it
 // toward rolling without slipping, in the air it keeps its spin. Once the ball comes to rest it
@@ -74,6 +75,7 @@ public class BallSkin : MonoBehaviour
     private Transform bubble;
     private Transform glove;
     private Transform bolt;
+    private Transform dashArrow;
     private TrailRenderer trail;
     private readonly List<Pose> restPose = new List<Pose>();
     private float idleWeight = 1f;
@@ -159,10 +161,16 @@ public class BallSkin : MonoBehaviour
             glove = ArtUtil.FitModel(art.superKnockbackModel, transform, diameter * 0.5f, "Knockback Glove");
             glove.gameObject.SetActive(false);
         }
-        if (art.dashModel != null && bolt == null)
+        if (art.speedBoostModel != null && bolt == null)
         {
-            bolt = ArtUtil.FitModel(art.dashModel, transform, diameter * 0.5f, "Dash Bolt");
+            bolt = ArtUtil.FitModel(art.speedBoostModel, transform, diameter * 0.5f, "Speed Bolt");
             bolt.gameObject.SetActive(false);
+        }
+        if (dashArrow == null)
+        {
+            // Not parented to the ball, so the ball's rolling can't turn it
+            dashArrow = DashArrow.Build(transform, diameter * 1.1f / Mathf.Max(0.01f, transform.lossyScale.x));
+            dashArrow.gameObject.SetActive(false);
         }
     }
 
@@ -224,9 +232,18 @@ public class BallSkin : MonoBehaviour
         }
         if (bolt != null)
         {
-            bolt.gameObject.SetActive(shown && player.HasDash);
+            bolt.gameObject.SetActive(shown && player.HasSpeedBoost);
             bolt.position = center + Vector3.up * (diameter * 0.95f + bob);
             bolt.Rotate(Vector3.up, 180f * dt, Space.World);
+        }
+        if (dashArrow != null)
+        {
+            dashArrow.gameObject.SetActive(shown && player.HasDash);
+            // Floats over the ball pointing where it's heading, nudging forward like it's pulling
+            float pull = Mathf.Repeat(Time.time * 2.5f, 1f);
+            dashArrow.SetPositionAndRotation(
+                center + Vector3.up * (diameter * 0.95f + bob) + facing * (diameter * 0.15f * pull),
+                look);
         }
     }
 

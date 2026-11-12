@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 // One place for the game's art, so the scripts that build things at runtime (HUD, player balls,
 // power-up pickups) can find it, and anyone can swap a piece in the Inspector.
@@ -11,7 +12,9 @@ public class GameArt : ScriptableObject
     public GameObject[] ballSkins;
 
     [Header("Power-up pickups")]
-    public GameObject dashModel;
+    [Tooltip("Lightning bolt. Dash has no model: it is built in code (DashArrow).")]
+    [FormerlySerializedAs("dashModel")]
+    public GameObject speedBoostModel;
     public GameObject invulnerabilityModel;
     public GameObject superKnockbackModel;
 

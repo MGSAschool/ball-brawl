@@ -2,10 +2,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Gives each power-up pickup its own shape so players can tell them apart at a glance. Uses the
-// models from GameArt (Dash = lightning bolt, Invulnerability = shield, Super Knockback = boxing
-// glove); without art it falls back to simple shapes (Speed Boost is always a green wheel).
-// The level (1-3) is how many copies are stacked on top of each other (matching the stacked
-// icons in the HUD), and higher levels glow brighter.
+// models from GameArt (Speed Boost = lightning bolt, Invulnerability = shield, Super Knockback =
+// boxing glove); Dash is a glowing double arrow with speed streaks built in code (DashArrow).
+// Without art the others fall back to simple shapes.
+// The level (1-3) is how many copies are stacked on top of each other (the HUD shows it as a
+// number badge), and higher levels glow brighter.
 // Added by PowerUpSpawner; replaces the pickup's own mesh with the shape.
 [RequireComponent(typeof(PowerUpPickUp))]
 public class PowerUpVisual : MonoBehaviour
@@ -50,7 +51,7 @@ public class PowerUpVisual : MonoBehaviour
         body.SetParent(transform, false);
         bobOffset = Random.value * Mathf.PI * 2f;
 
-        // The level is the number of copies stacked on top of each other (same as the HUD slots),
+        // The level is the number of copies stacked on top of each other,
         // centred on the pickup so its trigger still covers the whole stack
         float spacing = 0.62f * StackScale;
         for (int i = 0; i < level; i++)
@@ -86,7 +87,7 @@ public class PowerUpVisual : MonoBehaviour
         if (art == null) return null;
         switch (powerUp)
         {
-            case DashPowerUp: return art.dashModel;
+            case SpeedBoostPowerUp: return art.speedBoostModel;
             case InvulnerablePowerUp: return art.invulnerabilityModel;
             case SuperKnockbackPowerUp: return art.superKnockbackModel;
             default: return null;
@@ -107,14 +108,12 @@ public class PowerUpVisual : MonoBehaviour
         switch (powerUp)
         {
             case DashPowerUp:
-                // Two chevrons pointing forward: >>
-                for (int i = 0; i < 2; i++)
-                {
-                    float z = 0.2f - i * 0.32f;
-                    Part(PrimitiveType.Cube, body, new Vector3(0.13f, 0f, z), new Vector3(0f, -45f, 0f), new Vector3(0.14f, 0.18f, 0.42f), material);
-                    Part(PrimitiveType.Cube, body, new Vector3(-0.13f, 0f, z), new Vector3(0f, 45f, 0f), new Vector3(0.14f, 0.18f, 0.42f), material);
-                }
+            {
+                // Tipped up a little so it reads from the side as well as from above
+                var arrow = DashArrow.Build(body, 1.8f, material, CreateMaterial(null, DashArrow.StreakColor, 0.7f));
+                arrow.localRotation = Quaternion.Euler(-35f, 0f, 0f);
                 break;
+            }
 
             case InvulnerablePowerUp:
                 Part(PrimitiveType.Sphere, body, Vector3.zero, Vector3.zero, Vector3.one * 0.6f, material);
