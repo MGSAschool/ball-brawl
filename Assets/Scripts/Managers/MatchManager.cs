@@ -1,97 +1,67 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
-// Brawl: knock-offs score. Staph It!: survive red lights in the safe dome (StaphItMode).
-// BombaClutch: set off bombs (BombaClutchMode). All share the arena, power-ups and falls.
-public enum GameMode { Brawl, StaphIt, BombaClutch }
-
-// Core Ball Brawl loop: Lobby (join + free roam, pick a mode) -> Countdown -> timed match -> Results.
-// Knocking an opponent off the platform scores for whoever hit them last (except in BombaClutch,
-// where points come from bombs).
 public class MatchManager : MonoBehaviour
 {
-    public enum MatchState { Lobby, Countdown, Playing, MatchOver }
-
-    public class PlayerEntry
-    {
-        public BrawlPlayer Player;
-        public BrawlPowerUps PowerUps;
-        public string Name;
-        public Color Color;
-        public int Score;
-        public int Knockouts;
-        public int Falls;
-        public int Coins;
-        public bool IsRespawning;
-        public float RespawnAt;
-        public string ControlScheme;
-        // The keyboard or gamepad this player joined with
-        public InputDevice Device;
-        public bool ControllerLostAnnounced;
-        // Power-up types this player has already been shown a "press X" hint for
-        public readonly HashSet<System.Type> HintedPowerUps = new HashSet<System.Type>();
-    }
-
     public static MatchManager Instance { get; private set; }
 
-    // Fired after every state change; arena events use it to start, stop and reset
     public event Action<MatchState> StateChanged;
     public event Action<GameMode> ModeChanged;
-
-    [Header("Players")]
-    [SerializeField] private GameObject playerPrefab;
-    [SerializeField] private Transform[] spawnPoints;
-    [SerializeField] private int maxPlayers = 4;
-    [SerializeField] private int minPlayersToStart = 2;
-    [SerializeField] private Color[] playerColors =
-    {
-        new Color(0.95f, 0.30f, 0.30f),
-        new Color(0.30f, 0.55f, 0.95f),
-        new Color(0.35f, 0.85f, 0.40f),
-        new Color(1.00f, 0.60f, 0.20f)
-    };
+    public event Action<PlayerEntry> PlayerJoined;
 
     [Header("Match Rules")]
+    [SerializeField] private int minPlayersToStart = 2;
     [SerializeField] private float matchDuration = 180f;
-    [Tooltip("Length of a Staph It! or BombaClutch round.")]
     [SerializeField] private float minigameDuration = 120f;
     [SerializeField] private float countdownDuration = 3f;
-    [SerializeField] private float respawnDelay = 3f;
-    [SerializeField] private float spawnProtection = 1.5f;
-    [Tooltip("A fall counts as a knock-off if the player was hit within this many seconds.")]
     [SerializeField] private float knockoutCreditWindow = 5f;
-    [Tooltip("Points lost for falling off without being hit.")]
     [SerializeField] private int selfKnockoutPenalty = 1;
-    [Tooltip("Safety net: players below this height count as fallen even if they miss the DeathZone.")]
-    [SerializeField] private float fallHeight = -15f;
-    [Tooltip("Results stay up at least this long before a rematch can be started.")]
     [SerializeField] private float resultsLockDuration = 2f;
 
     [Header("Arena")]
     [SerializeField] private PowerUpSpawner powerUpSpawner;
 
-    public MatchState State { get; private set; } = MatchState.Lobby;
-    public float TimeRemaining { get; private set; }
-    public float CountdownRemaining { get; private set; }
-    public GameMode Mode { get; private set; } = GameMode.Brawl;
-    public float Duration => Mode == GameMode.Brawl ? matchDuration : minigameDuration;
-    public IReadOnlyList<PlayerEntry> Players => players;
-    public IReadOnlyList<PlayerEntry> Winners => winners;
-    public int MinPlayersToStart => minPlayersToStart;
-    public string Announcement { get; private set; }
-    public float AnnouncementTime { get; private set; } = float.NegativeInfinity;
-    public bool CanStart => players.Count >= minPlayersToStart &&
-        (State == MatchState.Lobby || (State == MatchState.MatchOver && Time.time - matchEndedAt >= resultsLockDuration));
-
     private readonly List<PlayerEntry> players = new List<PlayerEntry>();
     private readonly List<PlayerEntry> winners = new List<PlayerEntry>();
-    private readonly HashSet<InputDevice> joinedGamepads = new HashSet<InputDevice>();
-    private bool wasdJoined;
-    private bool arrowsJoined;
+    private PlayerSpawner spawner;
     private float matchEndedAt;
+
+    public MatchState State { get; private set; } = MatchState.Lobby;
+    public GameMode Mode { get; private set; } = GameMode.Brawl;
+    public float TimeRemaining { get; private set; }
+    public float CountdownRemaining { get; private set; }
+    public string Announcement { get; private set; }
+    public float AnnouncementTime { get; private set; } = float.NegativeInfinity;
+
+    public IReadOnlyList<PlayerEntry> Players { get { return players; } }
+    public IReadOnlyList<PlayerEntry> Winners { get { return winners; } }
+    public int MinPlayersToStart { get { return minPlayersToStart; } }
+    public PlayerSpawner Spawner { get { return spawner; } }
+
+    public float Duration
+    {
+        get
+        {
+            if (Mode == GameMode.Brawl) return matchDuration;
+            return minigameDuration;
+        }
+    }
+
+    public bool IsInMenu
+    {
+        get { return State == MatchState.Lobby || State == MatchState.MatchOver; }
+    }
+
+    public bool CanStart
+    {
+        get
+        {
+            if (players.Count < minPlayersToStart) return false;
+            if (State == MatchState.Lobby) return true;
+            return State == MatchState.MatchOver && Time.time - matchEndedAt >= resultsLockDuration;
+        }
+    }
 
     private void Awake()
     {
@@ -101,6 +71,7 @@ public class MatchManager : MonoBehaviour
             return;
         }
         Instance = this;
+        spawner = GetComponent<PlayerSpawner>();
     }
 
     private void OnDestroy()
@@ -110,198 +81,148 @@ public class MatchManager : MonoBehaviour
 
     private void Start()
     {
-        // Power-ups keep dropping in the lobby so players can try them while they wait;
-        // the countdown clears them so the match starts fresh
         if (powerUpSpawner != null) powerUpSpawner.enabled = true;
         Announce("Join in, then press ENTER / START to brawl!");
     }
 
     private void Update()
     {
-        // Controllers can drop out at any time (battery, cable), so this runs in every state
-        HandleLostControllers();
-
-        if (State == MatchState.Lobby || State == MatchState.MatchOver)
+        if (IsInMenu && CanStart && MenuInput.StartPressed())
         {
-            HandleJoining();
-            if (CanStart && StartPressed()) StartCountdown();
+            StartCountdown();
         }
 
-        switch (State)
+        if (State == MatchState.Countdown)
         {
-            case MatchState.Countdown:
-            {
-                int before = Mathf.CeilToInt(CountdownRemaining);
-                CountdownRemaining -= Time.deltaTime;
-                if (CountdownRemaining <= 0f) BeginMatch();
-                else if (Mathf.CeilToInt(CountdownRemaining) < before) Sfx.Play(Sound.Countdown);
-            }
-                break;
-
-            case MatchState.Playing:
-                TimeRemaining -= Time.deltaTime;
-                if (TimeRemaining <= 0f) EndMatch();
-                break;
+            UpdateCountdown();
         }
-
-        UpdatePlayers();
-    }
-
-    // --- Joining ---
-    private void HandleJoining()
-    {
-        if (players.Count >= maxPlayers || playerPrefab == null) return;
-
-        var keyboard = Keyboard.current;
-        if (keyboard != null)
+        else if (State == MatchState.Playing)
         {
-            if (!wasdJoined && keyboard.spaceKey.wasPressedThisFrame)
-            {
-                wasdJoined = Join("Keyboard", keyboard);
-            }
-            else if (!arrowsJoined && (keyboard.rightShiftKey.wasPressedThisFrame || keyboard.numpad0Key.wasPressedThisFrame))
-            {
-                arrowsJoined = Join("Arrows", keyboard);
-            }
-        }
-
-        // Every gamepad is its own player; WASD and Arrows stay available alongside them
-        foreach (var gamepad in Gamepad.all)
-        {
-            if (players.Count >= maxPlayers) break;
-            if (joinedGamepads.Contains(gamepad) || !gamepad.buttonSouth.wasPressedThisFrame) continue;
-            // A free pad first takes over a player whose controller dropped out
-            if (TryReconnect(gamepad)) continue;
-            if (Join("Gamepad", gamepad)) joinedGamepads.Add(gamepad);
+            TimeRemaining -= Time.deltaTime;
+            if (TimeRemaining <= 0f) EndMatch();
         }
     }
 
-    // --- Lost controllers ---
-    // True when a gamepad player's controller is unplugged or out of battery
-    public bool IsControllerLost(PlayerEntry entry) =>
-        entry != null && entry.ControlScheme == "Gamepad" && (entry.Device == null || !entry.Device.added);
-
-    private void HandleLostControllers()
+    public void AddPlayer(PlayerEntry entry)
     {
-        foreach (var entry in players)
-        {
-            if (!IsControllerLost(entry))
-            {
-                // The same pad plugged back in: PlayerInput re-pairs it by itself
-                entry.ControllerLostAnnounced = false;
-                continue;
-            }
-            if (entry.ControllerLostAnnounced) continue;
-            entry.ControllerLostAnnounced = true;
-            Announce($"{entry.Name}'s controller disconnected - reconnect it, or press A on a free controller");
-        }
-
-        // Mid-match a spare pad can still rescue a player (joining new players waits for the menus)
-        if (State == MatchState.Lobby || State == MatchState.MatchOver) return;
-        foreach (var gamepad in Gamepad.all)
-        {
-            if (!joinedGamepads.Contains(gamepad) && gamepad.buttonSouth.wasPressedThisFrame) TryReconnect(gamepad);
-        }
-    }
-
-    private bool TryReconnect(Gamepad gamepad)
-    {
-        var entry = players.FirstOrDefault(IsControllerLost);
-        if (entry == null || entry.Player == null || !entry.Player.TryGetComponent<PlayerInput>(out var input)) return false;
-
-        // Pairs the new pad to this player and drops the lost one
-        input.SwitchCurrentControlScheme("Gamepad", gamepad);
-        if (entry.Device != null) joinedGamepads.Remove(entry.Device);
-        entry.Device = gamepad;
-        entry.ControllerLostAnnounced = false;
-        joinedGamepads.Add(gamepad);
-        Announce($"{entry.Name} is back on a new controller");
-        Sfx.Play(Sound.Join);
-        return true;
-    }
-
-    private bool Join(string controlScheme, InputDevice device)
-    {
-        int index = players.Count;
-        var input = PlayerInput.Instantiate(playerPrefab, controlScheme: controlScheme, pairWithDevice: device);
-        if (!input.TryGetComponent<BrawlPlayer>(out var player))
-        {
-            Debug.LogError($"{playerPrefab.name} needs a BrawlPlayer component to join the match.");
-            Destroy(input.gameObject);
-            return false;
-        }
-
-        var entry = new PlayerEntry
-        {
-            Player = player,
-            PowerUps = input.GetComponent<BrawlPowerUps>(),
-            Name = $"P{index + 1}",
-            Color = playerColors.Length > 0 ? playerColors[index % playerColors.Length] : Color.white,
-            ControlScheme = controlScheme,
-            Device = device
-        };
-        input.gameObject.name = $"Player {index + 1} ({controlScheme})";
         players.Add(entry);
-        if (entry.PowerUps != null) entry.PowerUps.Collected += powerUp => ShowPowerUpHint(entry, powerUp);
-
-        // Character ball for this slot; plain tint when no skin art is set up
-        bool skinned = input.TryGetComponent<BallSkin>(out var skin) && skin.Apply(index, entry.Color);
-        if (!skinned)
-        {
-            foreach (var rend in input.GetComponentsInChildren<Renderer>())
-            {
-                rend.material.color = entry.Color;
-            }
-        }
-
-        DisablePlayerCameras(input.gameObject);
-        PlaceAtSpawn(entry, GetSpawnPosition(index));
-        Announce($"{entry.Name} joined on {ControlHints.SchemeLabel(controlScheme)} - power-up: {ControlHints.Key(controlScheme, ControlHints.Action.UsePowerUp)}");
-        Sfx.Play(Sound.Join);
-        Vfx.Poof(player.transform.position, entry.Color);
-        return true;
+        spawner.PlaceAtSpawn(entry, spawner.GetSpawnPosition(players.Count - 1));
+        if (PlayerJoined != null) PlayerJoined(entry);
     }
 
-    // First time each player grabs a power-up type, tell them which of *their* keys uses it
-    private void ShowPowerUpHint(PlayerEntry entry, PowerUpModifier powerUp)
-    {
-        if (!entry.HintedPowerUps.Add(powerUp.GetType())) return;
-
-        string name = ControlHints.PowerUpName(powerUp);
-        string key = ControlHints.Key(entry.ControlScheme, ControlHints.Action.UsePowerUp);
-        Announce($"{entry.Name}: {name} stored - {key} uses your oldest power-up");
-    }
-
-    // The arena uses one shared camera, so per-player cameras on the prefab are switched off
-    private static void DisablePlayerCameras(GameObject playerObject)
-    {
-        Camera main = Camera.main;
-        if (main == null || main.transform.IsChildOf(playerObject.transform)) return;
-
-        foreach (var cam in playerObject.GetComponentsInChildren<Camera>()) cam.enabled = false;
-        foreach (var listener in playerObject.GetComponentsInChildren<AudioListener>()) listener.enabled = false;
-    }
-
-    private static bool StartPressed()
-    {
-        var keyboard = Keyboard.current;
-        if (keyboard != null && (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame))
-            return true;
-
-        foreach (var gamepad in Gamepad.all)
-        {
-            if (gamepad.startButton.wasPressedThisFrame) return true;
-        }
-        return false;
-    }
-
-    // --- Match flow ---
-    // For menu buttons: same as pressing ENTER / START
     public bool TryStartMatch()
     {
         if (!CanStart) return false;
         StartCountdown();
         return true;
+    }
+
+    public bool SetMode(GameMode mode)
+    {
+        if (!IsInMenu) return false;
+        if (mode == Mode) return true;
+
+        Mode = mode;
+        if (ModeChanged != null) ModeChanged(mode);
+        Sfx.Play(Sound.Select);
+        return true;
+    }
+
+    public void Announce(string message)
+    {
+        Announcement = message;
+        AnnouncementTime = Time.time;
+    }
+
+    public PlayerEntry EntryFor(BrawlPlayer player)
+    {
+        if (player == null) return null;
+        foreach (PlayerEntry entry in players)
+        {
+            if (entry.Player == player) return entry;
+        }
+        return null;
+    }
+
+    public bool AwardCoins(BrawlPlayer player, int amount)
+    {
+        PlayerEntry entry = EntryFor(player);
+        if (entry == null || State != MatchState.Playing || entry.IsRespawning) return false;
+
+        entry.Coins += amount;
+        entry.Score += amount;
+        Sfx.Play(Sound.Coin, player.transform.position);
+        Vfx.Sparkle(player.transform.position, new Color(1f, 0.84f, 0.3f), 10);
+        return true;
+    }
+
+    public bool AwardPoints(BrawlPlayer player, int amount)
+    {
+        PlayerEntry entry = EntryFor(player);
+        if (entry == null || State != MatchState.Playing) return false;
+
+        entry.Score += amount;
+        return true;
+    }
+
+    public void HandlePlayerFell(BrawlPlayer player)
+    {
+        PlayerEntry entry = EntryFor(player);
+        if (entry == null || entry.IsRespawning) return;
+
+        Vector3 position = player.transform.position;
+        Sfx.Play(Sound.Fall, position, 0.8f);
+        Vfx.KnockOutFlare(new Vector3(position.x, Mathf.Max(position.y, -3f), position.z), entry.Color);
+
+        if (State == MatchState.Playing) ScoreFall(entry);
+        spawner.StartRespawn(entry);
+    }
+
+    public void KnockOutWithoutPenalty(BrawlPlayer player)
+    {
+        PlayerEntry entry = EntryFor(player);
+        if (entry == null || entry.IsRespawning) return;
+
+        Vfx.KnockOutFlare(player.transform.position, entry.Color);
+        spawner.StartRespawn(entry);
+    }
+
+    private void ScoreFall(PlayerEntry entry)
+    {
+        entry.Falls++;
+        PlayerEntry attacker = EntryFor(entry.Player.LastAttacker);
+        bool hitRecently = Time.time - entry.Player.LastHitTime <= knockoutCreditWindow;
+
+        if (attacker != null && hitRecently)
+        {
+            attacker.Knockouts++;
+            if (Mode != GameMode.BombaClutch)
+            {
+                attacker.Score++;
+                Sfx.Play(Sound.KnockOff, 0.8f);
+            }
+            Announce(attacker.Name + " knocked off " + entry.Name + "!");
+        }
+        else
+        {
+            entry.Score -= selfKnockoutPenalty;
+            Announce(entry.Name + " fell off!");
+        }
+    }
+
+    private void UpdateCountdown()
+    {
+        int secondsBefore = Mathf.CeilToInt(CountdownRemaining);
+        CountdownRemaining -= Time.deltaTime;
+
+        if (CountdownRemaining <= 0f)
+        {
+            BeginMatch();
+        }
+        else if (Mathf.CeilToInt(CountdownRemaining) < secondsBefore)
+        {
+            Sfx.Play(Sound.Countdown);
+        }
     }
 
     private void StartCountdown()
@@ -318,53 +239,29 @@ public class MatchManager : MonoBehaviour
 
         for (int i = 0; i < players.Count; i++)
         {
-            var entry = players[i];
-            entry.Score = 0;
-            entry.Knockouts = 0;
-            entry.Falls = 0;
-            entry.Coins = 0;
-            entry.IsRespawning = false;
+            PlayerEntry entry = players[i];
+            entry.ResetStats();
             if (entry.PowerUps != null) entry.PowerUps.Clear();
-            PlaceAtSpawn(entry, GetSpawnPosition(i));
+            spawner.PlaceAtSpawn(entry, spawner.GetSpawnPosition(i));
         }
+
         Announce("Get ready...");
         Sfx.Play(Sound.Countdown);
     }
 
     private void BeginMatch()
     {
-        // Timer first: modes read it when they hear the match start
         TimeRemaining = Duration;
         SetState(MatchState.Playing);
-        foreach (var entry in players)
+
+        foreach (PlayerEntry entry in players)
         {
             if (!entry.IsRespawning) entry.Player.ControlsEnabled = true;
         }
         if (powerUpSpawner != null) powerUpSpawner.enabled = true;
-        Announce(ModeName(Mode) + "!");
+
+        Announce(GameModeInfo.Name(Mode) + "!");
         Sfx.Play(Sound.Go);
-    }
-
-    // --- Game modes ---
-    public static string ModeName(GameMode mode)
-    {
-        switch (mode)
-        {
-            case GameMode.StaphIt: return "STAPH IT";
-            case GameMode.BombaClutch: return "BOMBA CLUTCH";
-            default: return "BRAWL";
-        }
-    }
-
-    // Only between matches (lobby or results)
-    public bool SetMode(GameMode mode)
-    {
-        if (State != MatchState.Lobby && State != MatchState.MatchOver) return false;
-        if (mode == Mode) return true;
-        Mode = mode;
-        ModeChanged?.Invoke(mode);
-        Sfx.Play(Sound.Select);
-        return true;
     }
 
     private void EndMatch()
@@ -374,224 +271,42 @@ public class MatchManager : MonoBehaviour
         matchEndedAt = Time.time;
         if (powerUpSpawner != null) powerUpSpawner.enabled = false;
 
-        foreach (var entry in players) entry.Player.ControlsEnabled = false;
-
-        winners.Clear();
-        if (players.Count > 0)
+        foreach (PlayerEntry entry in players)
         {
-            int best = players.Max(p => p.Score);
-            winners.AddRange(players.Where(p => p.Score == best));
+            entry.Player.ControlsEnabled = false;
         }
 
-        Announce(winners.Count == 1 ? $"{winners[0].Name} wins!" : "It's a draw!");
+        PickWinners();
+        if (winners.Count == 1) Announce(winners[0].Name + " wins!");
+        else Announce("It's a draw!");
+
         Sfx.Play(Sound.Whistle);
         Sfx.Play(Sound.Win, 0.9f);
-        foreach (var winner in winners)
+        foreach (PlayerEntry winner in winners)
         {
             if (winner.Player != null && !winner.IsRespawning) Vfx.Confetti(winner.Player.transform.position);
+        }
+    }
+
+    private void PickWinners()
+    {
+        winners.Clear();
+        if (players.Count == 0) return;
+
+        int best = int.MinValue;
+        foreach (PlayerEntry entry in players)
+        {
+            if (entry.Score > best) best = entry.Score;
+        }
+        foreach (PlayerEntry entry in players)
+        {
+            if (entry.Score == best) winners.Add(entry);
         }
     }
 
     private void SetState(MatchState newState)
     {
         State = newState;
-        StateChanged?.Invoke(newState);
-    }
-
-    // --- Scoring from arena events ---
-    public bool AwardCoins(BrawlPlayer player, int amount)
-    {
-        var entry = FindEntry(player);
-        if (entry == null || State != MatchState.Playing || entry.IsRespawning) return false;
-
-        entry.Coins += amount;
-        entry.Score += amount;
-        Sfx.Play(Sound.Coin, player.transform.position);
-        Vfx.Sparkle(player.transform.position, new Color(1f, 0.84f, 0.3f), 10);
-        return true;
-    }
-
-    // Minigame scoring (bombs, surviving a red light, getting caught). Counts while respawning too:
-    // a bomb can launch the ball that set it off.
-    public bool AwardPoints(BrawlPlayer player, int amount)
-    {
-        var entry = FindEntry(player);
-        if (entry == null || State != MatchState.Playing) return false;
-        entry.Score += amount;
-        return true;
-    }
-
-    public PlayerEntry EntryFor(BrawlPlayer player) => FindEntry(player);
-
-    // --- Knock-offs & respawning ---
-    public void HandlePlayerFell(BrawlPlayer player)
-    {
-        var entry = FindEntry(player);
-        if (entry == null || entry.IsRespawning) return;
-
-        Sfx.Play(Sound.Fall, player.transform.position, 0.8f);
-        Vfx.KnockOutFlare(new Vector3(player.transform.position.x, Mathf.Max(player.transform.position.y, -3f), player.transform.position.z), entry.Color);
-
-        if (State == MatchState.Playing)
-        {
-            entry.Falls++;
-            var attacker = FindEntry(player.LastAttacker);
-            bool credited = attacker != null && Time.time - player.LastHitTime <= knockoutCreditWindow;
-
-            if (credited)
-            {
-                attacker.Knockouts++;
-                // BombaClutch scores bombs, not knock-offs; being blasted off still costs nothing
-                if (Mode != GameMode.BombaClutch)
-                {
-                    attacker.Score++;
-                    Sfx.Play(Sound.KnockOff, 0.8f);
-                }
-                Announce($"{attacker.Name} knocked off {entry.Name}!");
-            }
-            else
-            {
-                entry.Score -= selfKnockoutPenalty;
-                Announce($"{entry.Name} fell off!");
-            }
-        }
-
-        StartRespawn(entry);
-    }
-
-    // Takes a player out without scoring it either way (e.g. struck by the arena storm); they
-    // respawn like after a fall
-    public void KnockOutWithoutPenalty(BrawlPlayer player)
-    {
-        var entry = FindEntry(player);
-        if (entry == null || entry.IsRespawning) return;
-        Vfx.KnockOutFlare(player.transform.position, entry.Color);
-        StartRespawn(entry);
-    }
-
-    private void StartRespawn(PlayerEntry entry)
-    {
-        Hide(entry);
-        entry.IsRespawning = true;
-        entry.RespawnAt = Time.time + respawnDelay;
-    }
-
-    private void UpdatePlayers()
-    {
-        foreach (var entry in players)
-        {
-            if (entry.Player == null) continue;
-
-            if (entry.IsRespawning)
-            {
-                if (Time.time >= entry.RespawnAt)
-                {
-                    entry.IsRespawning = false;
-                    PlaceAtSpawn(entry, GetSafestSpawnPosition(entry));
-                    if (State == MatchState.Playing) entry.Player.GrantInvulnerability(spawnProtection);
-                    Sfx.Play(Sound.Respawn, entry.Player.transform.position, 0.7f);
-                    Vfx.Poof(entry.Player.transform.position, entry.Color);
-                }
-            }
-            else if (entry.Player.transform.position.y < fallHeight)
-            {
-                HandlePlayerFell(entry.Player);
-            }
-        }
-    }
-
-    private void Hide(PlayerEntry entry)
-    {
-        var rb = entry.Player.GetComponent<Rigidbody>();
-        rb.linearVelocity = Vector3.zero;
-        rb.isKinematic = true;
-        entry.Player.ControlsEnabled = false;
-        SetVisible(entry, false);
-    }
-
-    private void PlaceAtSpawn(PlayerEntry entry, Vector3 position)
-    {
-        var rb = entry.Player.GetComponent<Rigidbody>();
-        rb.isKinematic = false;
-        rb.position = position;
-        entry.Player.transform.position = position;
-        entry.Player.ResetState();
-        SetVisible(entry, true);
-        entry.Player.ControlsEnabled = State == MatchState.Lobby || State == MatchState.Playing;
-    }
-
-    private static void SetVisible(PlayerEntry entry, bool visible)
-    {
-        foreach (var rend in entry.Player.GetComponentsInChildren<Renderer>()) rend.enabled = visible;
-        foreach (var col in entry.Player.GetComponentsInChildren<Collider>()) col.enabled = visible;
-    }
-
-    // --- Spawn points ---
-    // Arena events can move spawning elsewhere for a while (e.g. onto the late-match island)
-    private Transform[] spawnOverride;
-
-    // Arena events can rule out respawn spots (e.g. over fallen floor) and offer a spot when none are left
-    public Func<Vector3, bool> SpawnPointCheck { get; set; }
-    public Func<Vector3?> SpawnFallback { get; set; }
-
-    public void SetSpawnOverride(Transform[] points) => spawnOverride = points != null && points.Length > 0 ? points : null;
-    public void ClearSpawnOverride() => spawnOverride = null;
-
-    private Transform[] ActiveSpawnPoints => spawnOverride ?? spawnPoints;
-
-    private Vector3 GetSpawnPosition(int index)
-    {
-        var points = ActiveSpawnPoints;
-        if (points != null && points.Length > 0)
-        {
-            return points[index % points.Length].position;
-        }
-
-        // No spawn points assigned: spread players in a ring around the manager
-        float angle = index * Mathf.PI * 2f / Mathf.Max(1, maxPlayers);
-        return transform.position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * 8f + Vector3.up * 2f;
-    }
-
-    // Respawn at the spawn point farthest from everyone still on the platform
-    private Vector3 GetSafestSpawnPosition(PlayerEntry respawning)
-    {
-        var points = ActiveSpawnPoints;
-        int count = points != null && points.Length > 0 ? points.Length : maxPlayers;
-        Vector3 best = GetSpawnPosition(0);
-        float bestDistance = float.NegativeInfinity;
-        bool found = false;
-
-        for (int i = 0; i < count; i++)
-        {
-            Vector3 candidate = GetSpawnPosition(i);
-            if (SpawnPointCheck != null && !SpawnPointCheck(candidate)) continue;
-            found = true;
-            float nearest = float.PositiveInfinity;
-            foreach (var other in players)
-            {
-                if (other == respawning || other.IsRespawning || other.Player == null) continue;
-                nearest = Mathf.Min(nearest, Vector3.Distance(candidate, other.Player.transform.position));
-            }
-            if (nearest > bestDistance)
-            {
-                bestDistance = nearest;
-                best = candidate;
-            }
-        }
-
-        if (!found && SpawnFallback != null && SpawnFallback() is Vector3 fallback) return fallback;
-        return best;
-    }
-
-    private PlayerEntry FindEntry(BrawlPlayer player)
-    {
-        if (player == null) return null;
-        return players.FirstOrDefault(p => p.Player == player);
-    }
-
-    public void Announce(string message)
-    {
-        Announcement = message;
-        AnnouncementTime = Time.time;
+        if (StateChanged != null) StateChanged(newState);
     }
 }

@@ -1,10 +1,6 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
 
-// One place for the game's art, so the scripts that build things at runtime (HUD, player balls,
-// power-up pickups) can find it, and anyone can swap a piece in the Inspector.
-// The asset lives at Resources/GameArt so it loads without being wired into every scene.
 [CreateAssetMenu(menuName = "Ball Brawl/Game Art", fileName = "GameArt")]
 public class GameArt : ScriptableObject
 {
@@ -12,22 +8,17 @@ public class GameArt : ScriptableObject
     public GameObject[] ballSkins;
 
     [Header("Power-up pickups")]
-    [Tooltip("Lightning bolt. Dash has no model: it is built in code (DashArrow).")]
-    [FormerlySerializedAs("dashModel")]
     public GameObject speedBoostModel;
     public GameObject invulnerabilityModel;
     public GameObject superKnockbackModel;
 
     [Header("Effects on the ball")]
-    [Tooltip("Bubble shown around a ball while it is invulnerable.")]
     public GameObject shieldBubble;
 
     [Header("Minigames")]
-    [Tooltip("BombaClutch bomb model (replaces the Bomb prefab's plain sphere).")]
     public GameObject bombModel;
 
     [Header("Sound")]
-    [Tooltip("Ball bounce recording; the first bounce is used when a ball lands.")]
     public AudioClip bounceSound;
 
     [Header("UI")]
@@ -44,5 +35,13 @@ public class GameArt : ScriptableObject
     public Sprite leaveButton;
 
     private static GameArt instance;
-    public static GameArt Instance => instance != null ? instance : instance = Resources.Load<GameArt>("GameArt");
+
+    public static GameArt Instance
+    {
+        get
+        {
+            if (instance == null) instance = Resources.Load<GameArt>("GameArt");
+            return instance;
+        }
+    }
 }

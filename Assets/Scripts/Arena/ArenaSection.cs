@@ -1,77 +1,51 @@
 using UnityEngine;
 
-// One piece of the segmented arena floor. When triggered it shakes and flashes as a
-// warning, drops into the void, stays gone for a while, then rises back into place
-// (or stays gone for good when StayDown is set). Separately, a solid section can freeze:
-// it flashes icy blue as a warning, turns to slippery ice for a while, then thaws.
 [RequireComponent(typeof(MeshRenderer), typeof(MeshCollider), typeof(Rigidbody))]
 public class ArenaSection : MonoBehaviour
 {
     public enum SectionState { Solid, Warning, Falling, Gone, Rising }
-    public enum FreezeState { None, Warning, Frozen }
+
+    private const float ShakeAmount = 0.08f;
+
+    private Rigidbody rb;
+    private MeshCollider col;
+    private SectionPaint paint;
+    private Vector3 homePosition;
+    private Color warningColor;
+    private float stateStart;
+    private float warningDuration;
+    private float fallDuration;
+    private float goneDuration;
+    private float riseDuration;
+    private float fallDistance;
 
     public SectionState State { get; private set; } = SectionState.Solid;
     public bool CanFall { get; set; } = true;
-    // While set, a section that is gone never rises back
     public bool StayDown { get; set; }
-    public bool IsSolid => State == SectionState.Solid;
-    public FreezeState Freeze { get; private set; } = FreezeState.None;
-    public bool IsFrozen => Freeze == FreezeState.Frozen;
+    public bool IsSolid { get { return State == SectionState.Solid; } }
 
-    // Polar footprint relative to the arena center, used to pick points on this section
     public float InnerRadius { get; private set; }
     public float OuterRadius { get; private set; }
     public float StartAngle { get; private set; }
     public float EndAngle { get; private set; }
 
-    private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
-    private const float ShakeAmplitude = 0.08f;
-    // Frozen floor flickers for this long before it thaws
-    private const float ThawWarning = 1f;
-
-    private Rigidbody rb;
-    private MeshRenderer rend;
-    private MeshCollider col;
-    private MaterialPropertyBlock block;
-    private Vector3 homePosition;
-    private Color baseColor;
-    private Color warningColor;
-    private float stateStart;
-    private float warningDuration, fallDuration, goneDuration, riseDuration, fallDistance;
-    private float freezeStart, freezeWarningDuration, frozenDuration;
-    private Color iceColor;
-    private PhysicsMaterial normalMaterial, iceMaterial;
-
-    public void Init(float innerRadius, float outerRadius, float startAngle, float endAngle, Color baseColor, Color warningColor)
+    public void Init(float innerRadius, float outerRadius, float startAngle, float endAngle, Color baseColor, Color warning)
     {
         InnerRadius = innerRadius;
         OuterRadius = outerRadius;
         StartAngle = startAngle;
         EndAngle = endAngle;
-        this.baseColor = baseColor;
-        this.warningColor = warningColor;
+        warningColor = warning;
 
         rb = GetComponent<Rigidbody>();
-        rend = GetComponent<MeshRenderer>();
         col = GetComponent<MeshCollider>();
-        block = new MaterialPropertyBlock();
+        paint = GetComponent<SectionPaint>();
+        if (paint == null) paint = gameObject.AddComponent<SectionPaint>();
+
         rb.isKinematic = true;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         homePosition = transform.position;
-        normalMaterial = col.sharedMaterial;
-        SetColor(baseColor);
-    }
-
-    public void TriggerFreeze(float warning, float frozen, Color iceColor, PhysicsMaterial iceMaterial)
-    {
-        if (State != SectionState.Solid || Freeze != FreezeState.None) return;
-
-        freezeWarningDuration = warning;
-        frozenDuration = frozen;
-        this.iceColor = iceColor;
-        this.iceMaterial = iceMaterial;
-        Freeze = FreezeState.Warning;
-        freezeStart = Time.time;
+        paint.SetBaseColor(baseColor);
     }
 
     public void TriggerFall(float warning, float fall, float gone, float rise, float distance)
@@ -87,7 +61,6 @@ public class ArenaSection : MonoBehaviour
         Sfx.Play(Sound.Rumble, transform.position, 0.6f);
     }
 
-    // Moves the spot this section rests at (used to place the island on a new side each match)
     public void SetHome(Vector3 position)
     {
         homePosition = position;
@@ -98,17 +71,15 @@ public class ArenaSection : MonoBehaviour
         }
     }
 
-    // Removed instantly and kept hidden until Emerge (used for the late-match island)
     public void HideImmediate()
     {
-        ClearFreeze();
+        ClearIce();
         StayDown = true;
         Enter(SectionState.Gone);
         SetVisible(false);
         col.enabled = false;
     }
 
-    // Rises up from `distance` below its home position into place
     public void Emerge(float rise, float distance)
     {
         StayDown = false;
@@ -116,7 +87,7 @@ public class ArenaSection : MonoBehaviour
         fallDistance = distance;
         rb.position = homePosition + Vector3.down * distance;
         transform.position = rb.position;
-        SetColor(baseColor);
+        paint.ShowBase();
         SetVisible(true);
         col.enabled = true;
         Enter(SectionState.Rising);
@@ -124,33 +95,96 @@ public class ArenaSection : MonoBehaviour
 
     public void ResetImmediate()
     {
-        ClearFreeze();
+        ClearIce();
         StayDown = false;
         Enter(SectionState.Solid);
         rb.position = homePosition;
         transform.position = homePosition;
         SetVisible(true);
         col.enabled = true;
-        SetColor(baseColor);
+        paint.ShowBase();
     }
 
-    // Blends a solid, unfrozen section toward a colour (0 = its own colour); used for arena-wide
-    // warnings such as the storm
     public void Tint(Color color, float amount)
     {
-        if (State != SectionState.Solid || Freeze != FreezeState.None) return;
-        SetColor(Color.Lerp(baseColor, color, Mathf.Clamp01(amount)));
+        if (State != SectionState.Solid) return;
+        paint.Show(Color.Lerp(paint.BaseColor, color, Mathf.Clamp01(amount)));
     }
 
-    // Random point on this section's top surface (world space), kept away from the edges
     public Vector3 RandomTopPoint(Vector3 arenaCenter, float topY, float margin)
     {
         float r0 = InnerRadius + margin;
         float r1 = Mathf.Max(r0, OuterRadius - margin);
         float angle = Random.Range(StartAngle, EndAngle);
-        // Uniform by area
         float r = Mathf.Sqrt(Mathf.Lerp(r0 * r0, r1 * r1, Random.value));
-        return arenaCenter + new Vector3(Mathf.Cos(angle) * r, 0f, Mathf.Sin(angle) * r) + Vector3.up * (topY - arenaCenter.y);
+
+        Vector3 flat = new Vector3(Mathf.Cos(angle) * r, 0f, Mathf.Sin(angle) * r);
+        return arenaCenter + flat + Vector3.up * (topY - arenaCenter.y);
+    }
+
+    private void FixedUpdate()
+    {
+        if (State == SectionState.Solid) return;
+
+        float elapsed = Time.time - stateStart;
+        if (State == SectionState.Warning) UpdateWarning(elapsed);
+        else if (State == SectionState.Falling) UpdateFalling(elapsed);
+        else if (State == SectionState.Gone) UpdateGone(elapsed);
+        else if (State == SectionState.Rising) UpdateRising(elapsed);
+    }
+
+    private void UpdateWarning(float elapsed)
+    {
+        float t = Mathf.Clamp01(elapsed / warningDuration);
+        Vector2 jitter = Random.insideUnitCircle * ShakeAmount * (0.4f + t);
+        rb.MovePosition(homePosition + new Vector3(jitter.x, 0f, jitter.y));
+
+        float flash = Mathf.PingPong(elapsed * Mathf.Lerp(3f, 10f, t), 1f);
+        paint.Show(Color.Lerp(paint.BaseColor, warningColor, flash));
+
+        if (elapsed >= warningDuration)
+        {
+            paint.Show(warningColor);
+            Enter(SectionState.Falling);
+            Sfx.Play(Sound.Crumble, transform.position, 0.6f);
+
+            Bounds bounds = GetComponent<MeshRenderer>().bounds;
+            Vfx.Dust(bounds.center + Vector3.up * bounds.extents.y, 1f);
+        }
+    }
+
+    private void UpdateFalling(float elapsed)
+    {
+        float t = Mathf.Clamp01(elapsed / fallDuration);
+        rb.MovePosition(homePosition + Vector3.down * (fallDistance * t * t));
+        if (t >= 1f)
+        {
+            SetVisible(false);
+            col.enabled = false;
+            Enter(SectionState.Gone);
+        }
+    }
+
+    private void UpdateGone(float elapsed)
+    {
+        if (StayDown || elapsed < goneDuration) return;
+
+        paint.ShowBase();
+        SetVisible(true);
+        col.enabled = true;
+        Enter(SectionState.Rising);
+    }
+
+    private void UpdateRising(float elapsed)
+    {
+        float t = Mathf.Clamp01(elapsed / riseDuration);
+        float eased = 1f - (1f - t) * (1f - t);
+        rb.MovePosition(homePosition + Vector3.down * (fallDistance * (1f - eased)));
+        if (t >= 1f)
+        {
+            rb.MovePosition(homePosition);
+            Enter(SectionState.Solid);
+        }
     }
 
     private void Enter(SectionState state)
@@ -159,125 +193,17 @@ public class ArenaSection : MonoBehaviour
         stateStart = Time.time;
     }
 
-    private void Update()
+    private void ClearIce()
     {
-        if (Freeze == FreezeState.None) return;
-
-        float elapsed = Time.time - freezeStart;
-        if (Freeze == FreezeState.Warning)
-        {
-            // Same idea as the fall warning: flash faster as the freeze gets closer
-            float t = Mathf.Clamp01(elapsed / freezeWarningDuration);
-            float flash = Mathf.PingPong(elapsed * Mathf.Lerp(3f, 10f, t), 1f);
-            SetColor(Color.Lerp(baseColor, iceColor, flash));
-
-            if (elapsed >= freezeWarningDuration)
-            {
-                Freeze = FreezeState.Frozen;
-                freezeStart = Time.time;
-                Sfx.Play(Sound.Freeze, transform.position, 0.6f);
-                col.sharedMaterial = iceMaterial;
-                SetColor(iceColor);
-            }
-        }
-        else if (elapsed >= frozenDuration)
-        {
-            ClearFreeze();
-            SetColor(baseColor);
-        }
-        else if (elapsed >= frozenDuration - ThawWarning)
-        {
-            // Flicker back toward normal just before thawing
-            SetColor(Color.Lerp(iceColor, baseColor, Mathf.PingPong(elapsed * 6f, 1f) * 0.6f));
-        }
+        SectionFreeze ice = GetComponent<SectionFreeze>();
+        if (ice != null) ice.Clear();
     }
 
-    private void ClearFreeze()
-    {
-        if (Freeze == FreezeState.None) return;
-        Freeze = FreezeState.None;
-        if (col == null) col = GetComponent<MeshCollider>();
-        col.sharedMaterial = normalMaterial;
-    }
-
-    private void FixedUpdate()
-    {
-        if (State == SectionState.Solid) return;
-
-        float elapsed = Time.time - stateStart;
-        switch (State)
-        {
-            case SectionState.Warning:
-            {
-                // Shake harder and flash faster as the drop gets closer
-                float t = Mathf.Clamp01(elapsed / warningDuration);
-                Vector2 jitter = Random.insideUnitCircle * ShakeAmplitude * (0.4f + t);
-                rb.MovePosition(homePosition + new Vector3(jitter.x, 0f, jitter.y));
-                float flash = Mathf.PingPong(elapsed * Mathf.Lerp(3f, 10f, t), 1f);
-                SetColor(Color.Lerp(baseColor, warningColor, flash));
-
-                if (elapsed >= warningDuration)
-                {
-                    SetColor(warningColor);
-                    Enter(SectionState.Falling);
-                    Sfx.Play(Sound.Crumble, transform.position, 0.6f);
-                    Vfx.Dust(rend.bounds.center + Vector3.up * (rend.bounds.extents.y), 1f);
-                }
-                break;
-            }
-
-            case SectionState.Falling:
-            {
-                float t = Mathf.Clamp01(elapsed / fallDuration);
-                rb.MovePosition(homePosition + Vector3.down * (fallDistance * t * t));
-                if (t >= 1f)
-                {
-                    SetVisible(false);
-                    col.enabled = false;
-                    Enter(SectionState.Gone);
-                }
-                break;
-            }
-
-            case SectionState.Gone:
-                if (!StayDown && elapsed >= goneDuration)
-                {
-                    SetColor(baseColor);
-                    SetVisible(true);
-                    col.enabled = true;
-                    Enter(SectionState.Rising);
-                }
-                break;
-
-            case SectionState.Rising:
-            {
-                float t = Mathf.Clamp01(elapsed / riseDuration);
-                float eased = 1f - (1f - t) * (1f - t);
-                rb.MovePosition(homePosition + Vector3.down * (fallDistance * (1f - eased)));
-                if (t >= 1f)
-                {
-                    rb.MovePosition(homePosition);
-                    Enter(SectionState.Solid);
-                }
-                break;
-            }
-        }
-    }
-
-    // Shows or hides the section together with anything riding on it (e.g. the island's rock)
     private void SetVisible(bool visible)
     {
-        if (rend == null) rend = GetComponent<MeshRenderer>();
-        foreach (var r in GetComponentsInChildren<Renderer>(true)) r.enabled = visible;
-    }
-
-    private void SetColor(Color color)
-    {
-        // Runtime-only references are lost if scripts recompile during play mode
-        if (rend == null) rend = GetComponent<MeshRenderer>();
-        if (block == null) block = new MaterialPropertyBlock();
-        rend.GetPropertyBlock(block);
-        block.SetColor(BaseColorId, color);
-        rend.SetPropertyBlock(block);
+        foreach (Renderer rend in GetComponentsInChildren<Renderer>(true))
+        {
+            rend.enabled = visible;
+        }
     }
 }

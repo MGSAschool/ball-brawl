@@ -4,9 +4,7 @@ using UnityEngine;
 public struct AudioSegment
 {
     public AudioClip clip;
-    [Tooltip("Start timestamp in seconds inside the audio clip")]
     public float startTime;
-    [Tooltip("Duration of this specific slice in seconds")]
     public float duration;
     [Range(0.5f, 2f)] public float pitchMin;
     [Range(0.5f, 2f)] public float pitchMax;
@@ -36,14 +34,12 @@ public class BallAudio : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
 
-        // Set up bounce source if not assigned
         if (bounceSource == null)
         {
             bounceSource = gameObject.AddComponent<AudioSource>();
             bounceSource.playOnAwake = false;
         }
 
-        // Set up roll source if not assigned
         if (rollSource == null)
         {
             rollSource = gameObject.AddComponent<AudioSource>();
@@ -89,7 +85,6 @@ public class BallAudio : MonoBehaviour
         float pitchRange = segment.pitchMax > segment.pitchMin ? Random.Range(segment.pitchMin, segment.pitchMax) : 1f;
         bounceSource.pitch = pitchRange;
 
-        // Scale volume with impact speed
         bounceSource.volume = Mathf.Clamp01(impactForce / 10f);
         bounceSource.Play();
 
@@ -110,7 +105,6 @@ public class BallAudio : MonoBehaviour
     {
         if (rollSource.clip == null) return;
 
-        // Ground check horizontal speed
         Vector3 horizontalVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
         float speed = horizontalVel.magnitude;
 

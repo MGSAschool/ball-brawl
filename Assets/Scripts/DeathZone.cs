@@ -16,7 +16,6 @@ public class DeathZone : MonoBehaviour
             minigame.PlayerFell(player);
         }
 
-        // In the main arena the match handles scoring and respawning
         if (MatchManager.Instance != null)
         {
             MatchManager.Instance.HandlePlayerFell(player);
@@ -29,14 +28,12 @@ public class DeathZone : MonoBehaviour
     {
         Rigidbody rb = player.GetComponent<Rigidbody>();
 
-        // Freeze and hide player during delay
         rb.linearVelocity = Vector3.zero;
         rb.isKinematic = true;
         player.gameObject.SetActive(false);
 
         yield return new WaitForSeconds(3f);
 
-        // Reset to spawn point
         player.transform.position = spawnPoint != null ? spawnPoint.position : new Vector3(0, 2, 0);
         player.gameObject.SetActive(true);
         rb.isKinematic = false;
