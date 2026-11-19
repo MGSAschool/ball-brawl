@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SuperKnockbackPowerUp
   duration: 10
   weight: 10
-  sprite: {fileID: 21300000, guid: 7c69703553720534885c33f4cd394483, type: 3}
+  sprite: {fileID: 21300000, guid: 5bf8432df84c90f49b7616c885054788, type: 3}
   level: 3
   multiplier: 6

@@ -10,7 +10,8 @@ public class PlayerInputManager : MonoBehaviour
     private List<PlayerInput> players = new List<PlayerInput>();
     bool wasdJoined = false;
     bool arrowsJoined = false;
-    bool gamePadJoined = false;
+    // Every gamepad can join as its own player, alongside WASD and Arrows
+    private readonly HashSet<Gamepad> joinedGamepads = new HashSet<Gamepad>();
 
     int playerJoinedIndex = 0;
     // Update is called once per frame
@@ -50,7 +51,7 @@ public class PlayerInputManager : MonoBehaviour
     private void JoinArrows()
     {
         if(arrowsJoined) return;
-        if(Keyboard.current.numpad0Key.wasPressedThisFrame)
+        if(Keyboard.current.rightShiftKey.wasPressedThisFrame || Keyboard.current.numpad0Key.wasPressedThisFrame)
         {
             var player = PlayerInput.Instantiate(playerPrefab, 
             controlScheme: "Arrows", 
@@ -71,29 +72,24 @@ public class PlayerInputManager : MonoBehaviour
 
     private void JoinGamepad()
     {
-        if (!gamePadJoined)
+        foreach(var gamePad in Gamepad.all)
         {
-            foreach(var gamePad in Gamepad.all)
+            if (joinedGamepads.Contains(gamePad) || !gamePad.buttonSouth.wasPressedThisFrame) continue;
+
+            var player = PlayerInput.Instantiate(playerPrefab,
+            controlScheme: "Gamepad",
+            pairWithDevice: gamePad);
+
+            if(spawnPoints.Length > playerJoinedIndex)
             {
-                if (gamePad.buttonSouth.wasPressedThisFrame)
-                {
-                    var player = PlayerInput.Instantiate(playerPrefab, 
-                    controlScheme: "Gamepad", 
-                    pairWithDevice: gamePad);
-
-                    if(spawnPoints.Length > 2)
-                    {
-                        player.transform.position = spawnPoints[playerJoinedIndex].position;
-                    }
-
-                    players.Add(player);
-                    gamePadJoined = true;
-                    playerJoinedIndex ++;
-                    CreateHUD(player);
-                    player.name = $"Player {playerJoinedIndex}";
-                    break;
-                }
+                player.transform.position = spawnPoints[playerJoinedIndex].position;
             }
+
+            players.Add(player);
+            joinedGamepads.Add(gamePad);
+            playerJoinedIndex ++;
+            CreateHUD(player);
+            player.name = $"Player {playerJoinedIndex}";
         }
     }
 

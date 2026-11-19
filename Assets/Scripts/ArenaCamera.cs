@@ -1,54 +1,77 @@
 using UnityEngine;
 
-// Shared local-multiplayer camera: keeps its scene rotation and pulls back to frame every
-// player on the platform. Looks at the arena center when nobody is in play.
 public class ArenaCamera : MonoBehaviour
 {
     [SerializeField] private MatchManager match;
     [SerializeField] private Transform arenaCenter;
-    [SerializeField] private float minDistance = 22f;
-    [SerializeField] private float maxDistance = 70f;
-    [Tooltip("Extra distance per metre of spread between players.")]
+    [SerializeField] private float minDistance = 20f;
+    [SerializeField] private float maxDistance = 45f;
     [SerializeField] private float zoomPerUnitSpread = 1.1f;
     [SerializeField] private float smoothTime = 0.4f;
-    [Tooltip("Screen shape the distances were tuned for. Narrower screens (4:3, portrait) pull back to keep the sides in view.")]
     [SerializeField] private float referenceAspect = 16f / 9f;
+    [SerializeField] private float lobbyDistance = 40f;
 
     private Vector3 velocity;
     private Camera cam;
+    private ArenaFinale finale;
 
     private void Awake()
     {
         if (match == null) match = FindAnyObjectByType<MatchManager>();
+        finale = FindAnyObjectByType<ArenaFinale>();
         cam = GetComponent<Camera>();
     }
 
     private void LateUpdate()
     {
-        Vector3 fallbackCenter = arenaCenter != null ? arenaCenter.position : Vector3.zero;
-        var bounds = new Bounds(fallbackCenter, Vector3.zero);
-        bool any = false;
+        Vector3 center = Vector3.zero;
+        if (arenaCenter != null) center = arenaCenter.position;
 
-        if (match != null)
+        Bounds view = new Bounds(center, Vector3.zero);
+        bool anyPlayer = AddPlayersToView(ref view);
+
+        Bounds finaleView;
+        bool playing = match != null && match.State == MatchState.Playing;
+        if (anyPlayer && playing && finale != null && finale.TryGetFinaleView(out finaleView))
         {
-            foreach (var p in match.Players)
-            {
-                if (p.Player == null || p.IsRespawning) continue;
-                if (!any) bounds = new Bounds(p.Player.transform.position, Vector3.zero);
-                else bounds.Encapsulate(p.Player.transform.position);
-                any = true;
-            }
+            view.Encapsulate(finaleView);
         }
 
-        float spread = new Vector2(bounds.size.x, bounds.size.z).magnitude;
-        float distance = any ? Mathf.Clamp(minDistance + spread * zoomPerUnitSpread, minDistance, maxDistance) : minDistance * 1.5f;
+        float distance = minDistance * 1.5f;
+        if (anyPlayer)
+        {
+            float spread = new Vector2(view.size.x, view.size.z).magnitude;
+            distance = Mathf.Clamp(minDistance + spread * zoomPerUnitSpread, minDistance, maxDistance);
+        }
 
-        // Horizontal view shrinks with narrower screens, so back off by the same ratio
-        float aspect = cam != null ? cam.aspect : referenceAspect;
+        if (match != null && match.State == MatchState.Lobby)
+        {
+            view.center = center;
+            distance = lobbyDistance;
+        }
+
+        float aspect = referenceAspect;
+        if (cam != null) aspect = cam.aspect;
         distance *= Mathf.Max(1f, referenceAspect / Mathf.Max(0.1f, aspect));
 
-        Vector3 target = bounds.center - transform.forward * distance;
-
+        Vector3 target = view.center - transform.forward * distance;
         transform.position = Vector3.SmoothDamp(transform.position, target, ref velocity, smoothTime);
+    }
+
+    private bool AddPlayersToView(ref Bounds view)
+    {
+        if (match == null) return false;
+
+        bool anyPlayer = false;
+        foreach (PlayerEntry entry in match.Players)
+        {
+            if (entry.Player == null || entry.IsRespawning) continue;
+
+            Vector3 position = entry.Player.transform.position;
+            if (!anyPlayer) view = new Bounds(position, Vector3.zero);
+            else view.Encapsulate(position);
+            anyPlayer = true;
+        }
+        return anyPlayer;
     }
 }

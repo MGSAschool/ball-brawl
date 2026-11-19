@@ -158,6 +158,9 @@ GameObject:
   - component: {fileID: 6585117233454281682}
   - component: {fileID: 2900943301250033182}
   - component: {fileID: 7307333872077393931}
+  - component: {fileID: 8261606564612869855}
+  - component: {fileID: 6063585696531384910}
+  - component: {fileID: 6373415199252719996}
   - component: {fileID: 6634443300559391164}
   m_Layer: 0
   m_Name: Player
@@ -487,9 +490,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BallSkin
   sizeMultiplier: 1.05
-  bubbleSize: 1.45
-  bubbleColor: {r: 0.35, g: 0.9, b: 1, a: 0.22}
-  bubbleLinesColor: {r: 0.85, g: 1, b: 1, a: 0.6}
   rollGrip: 12
   airSpinDrag: 0.3
   settleSpeed: 1.2
@@ -503,7 +503,47 @@ MonoBehaviour:
   stretchFullSpeed: 30
   maxStretch: 0.4
   stretchResponse: 14
+--- !u!114 &8261606564612869855
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6289414871106444190}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a6005ad7b4a099449a44fbe6e22c8f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BallPowerUpProps
+  bubbleSize: 1.45
+  bubbleColor: {r: 0.35, g: 0.9, b: 1, a: 0.22}
+  bubbleLinesColor: {r: 0.85, g: 1, b: 1, a: 0.6}
+--- !u!114 &6063585696531384910
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6289414871106444190}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1e1696e9fddcbe4c89b4df935a43dbc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BallTrail
   trailSpeed: 12
+  trailTime: 0.25
+--- !u!114 &6373415199252719996
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6289414871106444190}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef7b3063ec37c154b82ab8ea46c9ba01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BallHitEffects
   landingImpact: 4
 --- !u!114 &6634443300559391164
 MonoBehaviour:

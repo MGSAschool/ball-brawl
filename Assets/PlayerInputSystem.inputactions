@@ -115,6 +115,17 @@
                     "isPartOfComposite": false
                 },
                 {
+                    "name": "",
+                    "id": "4f1d7c2a-8b3e-4a6d-9c51-2e7f0b9d3a18",
+                    "path": "<Gamepad>/dpad",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Gamepad",
+                    "action": "Move",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
                     "name": "Arrows",
                     "id": "23eb965c-c84b-46b0-b84d-13ea8e68bfc5",
                     "path": "2DVector",
