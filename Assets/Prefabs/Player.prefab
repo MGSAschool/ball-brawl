@@ -158,6 +158,7 @@ GameObject:
   - component: {fileID: 6585117233454281682}
   - component: {fileID: 2900943301250033182}
   - component: {fileID: 7307333872077393931}
+  - component: {fileID: 6634443300559391164}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -485,8 +486,34 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b86b3c272889ec8418febc1ce600a5db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BallSkin
-  turnSpeed: 10
   sizeMultiplier: 1.05
   bubbleSize: 1.45
   bubbleColor: {r: 0.35, g: 0.9, b: 1, a: 0.22}
   bubbleLinesColor: {r: 0.85, g: 1, b: 1, a: 0.6}
+  rollGrip: 12
+  airSpinDrag: 0.3
+  settleSpeed: 1.2
+  settleRate: 5
+  idleBlendRate: 6
+  squashPerSpeed: 0.035
+  maxSquash: 0.3
+  squashSpring: 260
+  squashDamping: 9
+  stretchStartSpeed: 13
+  stretchFullSpeed: 30
+  maxStretch: 0.4
+  stretchResponse: 14
+  trailSpeed: 12
+  landingImpact: 4
+--- !u!114 &6634443300559391164
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6289414871106444190}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ef384d4b06a9404a8ba8a88cab3307a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RumbleControls
