@@ -54,36 +54,63 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\BallAudio.cs" />
+    <Compile Include="Assets\Scripts\Arena\IceSlide.cs" />
     <Compile Include="Assets\Scripts\PowerUps\PowerUpModifier.cs" />
+    <Compile Include="Assets\Scripts\PowerUps\BrawlPowerUps.cs" />
     <Compile Include="Assets\Scripts\PowerupInventory.cs" />
+    <Compile Include="Assets\Scripts\Visuals\ArtUtil.cs" />
     <Compile Include="Assets\Scripts\DeathZone.cs" />
+    <Compile Include="Assets\Scripts\Arena\FallingPlatforms.cs" />
+    <Compile Include="Assets\Scripts\Managers\MatchHUD.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
+    <Compile Include="Assets\Scripts\PowerUps\PowerUpVisual.cs" />
     <Compile Include="Assets\Scripts\PlayerInputManager.cs" />
     <Compile Include="Assets\Scripts\PowerUps\SpeedBoostPowerUp.cs" />
     <Compile Include="Assets\Scripts\Interfaces\IKnockable.cs" />
     <Compile Include="Assets\Scripts\PowerUps\DashPowerUp.cs" />
+    <Compile Include="Assets\Scripts\Visuals\GameArt.cs" />
+    <Compile Include="Assets\Scripts\Managers\PlayerTags.cs" />
     <Compile Include="Assets\Scripts\PowerUps\SuperKnockbackPowerUp.cs" />
+    <Compile Include="Assets\Scripts\Visuals\CameraShake.cs" />
+    <Compile Include="Assets\Scripts\Managers\ControlHints.cs" />
     <Compile Include="Assets\Scripts\PlayerSpawnManager.cs" />
+    <Compile Include="Assets\Scripts\Minigames\BombaClutchMode.cs" />
+    <Compile Include="Assets\Scripts\Managers\UIController.cs" />
     <Compile Include="Assets\Scripts\PlayerInputReader.cs" />
     <Compile Include="Assets\Scripts\KnockbackDealer.cs" />
+    <Compile Include="Assets\Scripts\Arena\IceSlideSampler.cs" />
+    <Compile Include="Assets\Scripts\ArenaCamera.cs" />
+    <Compile Include="Assets\Scripts\Visuals\Vfx.cs" />
     <Compile Include="Assets\Scripts\Bomb.cs" />
     <Compile Include="Assets\Scripts\Managers\NewMonoBehaviourScript.cs" />
     <Compile Include="Assets\Scripts\PowerUps\InvulnerablePowerUp.cs" />
     <Compile Include="Assets\Scripts\PowerUps\PowerUpHandler.cs" />
+    <Compile Include="Assets\Scripts\Minigames\StaphItMode.cs" />
     <Compile Include="Assets\Scripts\Managers\SpawnManager.cs" />
-    <Compile Include="Assets\Scripts\PlayerInventory.cs" />
     <Compile Include="Assets\Scripts\PowerUpSpawner.cs" />
     <Compile Include="Assets\Scripts\Components\KnockbackComponent.cs" />
     <Compile Include="Assets\Scripts\Minigames\BombaClutchMinigame.cs" />
     <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
     <Compile Include="Assets\Scripts\CameraFollowMouse.cs" />
+    <Compile Include="Assets\Scripts\Managers\OffscreenIndicators.cs" />
+    <Compile Include="Assets\Scripts\Arena\DespawnWhenUnsupported.cs" />
     <Compile Include="Assets\Scripts\PowerupInventoryUI.cs" />
+    <Compile Include="Assets\Scripts\Arena\CoinRush.cs" />
     <Compile Include="Assets\Scripts\Minigames\RedLightGreenLightMinigame.cs" />
+    <Compile Include="Assets\Scripts\Minigames\BombVisual.cs" />
+    <Compile Include="Assets\Scripts\Managers\MatchManager.cs" />
+    <Compile Include="Assets\Scripts\Visuals\BallSkin.cs" />
+    <Compile Include="Assets\Scripts\Arena\ArenaSection.cs" />
     <Compile Include="Assets\Scripts\PowerUps\PowerUpPickUp.cs" />
     <Compile Include="Assets\Scripts\EnemyScript.cs" />
+    <Compile Include="Assets\Scripts\Arena\Coin.cs" />
+    <Compile Include="Assets\Scripts\UI_InputReader.cs" />
+    <Compile Include="Assets\Scripts\Visuals\Sfx.cs" />
     <Compile Include="Assets\Scripts\BrawlPlayer.cs" />
+    <Compile Include="Assets\Scripts\Arena\ArenaBounds.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Fonts\OFL.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile-2-Pass.shader" />
@@ -1264,6 +1291,10 @@
       <HintPath>Library\ScriptAssemblies\Unity.TextMeshPro.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="glTFast.Editor">
+      <HintPath>Library\ScriptAssemblies\glTFast.Editor.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Unity.Rendering.LightTransport.Editor">
       <HintPath>Library\ScriptAssemblies\Unity.Rendering.LightTransport.Editor.dll</HintPath>
       <Private>False</Private>
@@ -1364,16 +1395,16 @@
       <HintPath>Library\ScriptAssemblies\Unity.InternalAPIEditorBridge.ShaderGraph.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary">
-      <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Unity.RenderPipelines.Core.Runtime">
       <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.Core.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.VisualScripting.Flow">
       <HintPath>Library\ScriptAssemblies\Unity.VisualScripting.Flow.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary">
+      <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.TextMeshPro.Editor">
@@ -1390,6 +1421,10 @@
     </Reference>
     <Reference Include="Unity.VisualScripting.Flow.Editor">
       <HintPath>Library\ScriptAssemblies\Unity.VisualScripting.Flow.Editor.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="glTFast.dots">
+      <HintPath>Library\ScriptAssemblies\glTFast.dots.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.VisualStudio.Editor">
@@ -1494,6 +1529,10 @@
     </Reference>
     <Reference Include="Unity.InputSystem">
       <HintPath>Library\ScriptAssemblies\Unity.InputSystem.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="glTFast">
+      <HintPath>Library\ScriptAssemblies\glTFast.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEditor.UI">
