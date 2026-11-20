@@ -72,6 +72,15 @@ public static class UIKit
         rect.offsetMax = Vector2.zero;
     }
 
+    public static void StretchToArt(RectTransform rect, Rect area, Rect artArea)
+    {
+        float width = area.width / artArea.width;
+        float height = area.height / artArea.height;
+        float left = area.xMin - artArea.xMin * width;
+        float bottom = area.yMin - artArea.yMin * height;
+        Stretch(rect, new Rect(left, bottom, width, height));
+    }
+
     public static void Place(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 position, Vector2 size)
     {
         rect.anchorMin = anchorMin;

@@ -24,13 +24,15 @@ MonoBehaviour:
   bombModel: {fileID: -6929390386786155498, guid: 49713ca4b7b319540aff972144c39537, type: 3}
   bounceSound: {fileID: 8300000, guid: d6c6efb439cce944799a6ac1ef83b876, type: 3}
   font: {fileID: 11400000, guid: bafdb567b3f8f264b8196b0a6ac3f709, type: 2}
-  logo: {fileID: -765909358938296604, guid: 3f8f9ad395ad7104083ac2b3fa74705d, type: 3}
-  scoreboardFrame: {fileID: 1840059084634729652, guid: b3d11a68f7b75714b814533d80422290, type: 3}
-  howToPlayFrame: {fileID: 2450565909728410856, guid: 673f0d000e0b9e548970b64772e8e0d0, type: 3}
-  inventoryFrame: {fileID: 890974472578598604, guid: d3dabd25299a769429c328f7430f02ee, type: 3}
+  logo: {fileID: 21300000, guid: 15ebc565581547549bfdd19dd71ace67, type: 3}
+  scoreboardFrame: {fileID: 21300000, guid: 8a21511969dc4cdb9d09a355b7555e97, type: 3}
+  howToPlayFrame: {fileID: 21300000, guid: 858ce0b9052c42b686447128c195a846, type: 3}
+  controlsFrame: {fileID: 21300000, guid: d01cd4f2c7f344a68a7a65370189e990, type: 3}
+  inventoryFrame: {fileID: 21300000, guid: 59183a72a63048429a1031d44765c122, type: 3}
   namePlate: {fileID: 3204213594579170988, guid: 6dad0bc9debaddc4fb24c89a71273025, type: 3}
   pointsIcon: {fileID: -6454717568534380362, guid: fc8ce868422aa1d4c801ba234f9334d4, type: 3}
   coinIcon: {fileID: 21300000, guid: 629a59487add3b1409400991d524dbf8, type: 3}
-  playButton: {fileID: 21300000, guid: 1c31b5807c963884384b1059a87d7d3b, type: 3}
+  playButton: {fileID: 21300000, guid: 1dcea2425e604b0da4f8c587b3f368ac, type: 3}
   howToPlayButton: {fileID: 21300000, guid: 1875745850c427848ad627d8ccb85853, type: 3}
-  leaveButton: {fileID: 21300000, guid: a1ad86ca480b5bd45951caa5cdcc4341, type: 3}
+  leaveButton: {fileID: 21300000, guid: 087301013a8e4461b4f2bf5a9aa10dee, type: 3}
+  modeLabel: {fileID: 21300000, guid: c679e862ad2649aab48e2cb7f3c1a0e0, type: 3}

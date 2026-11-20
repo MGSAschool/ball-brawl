@@ -26,6 +26,7 @@ public class GameArt : ScriptableObject
     public Sprite logo;
     public Sprite scoreboardFrame;
     public Sprite howToPlayFrame;
+    public Sprite controlsFrame;
     public Sprite inventoryFrame;
     public Sprite namePlate;
     public Sprite pointsIcon;
@@ -33,6 +34,7 @@ public class GameArt : ScriptableObject
     public Sprite playButton;
     public Sprite howToPlayButton;
     public Sprite leaveButton;
+    public Sprite modeLabel;
 
     private static GameArt instance;
 

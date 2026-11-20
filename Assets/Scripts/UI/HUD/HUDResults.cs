@@ -5,10 +5,14 @@ using UnityEngine.UI;
 
 public class HUDResults : HUDPanel
 {
-    private static readonly Rect FrameInside = Rect.MinMaxRect(0.13f, 0.12f, 0.87f, 0.79f);
-    private static readonly Rect PlateCircle = Rect.MinMaxRect(0.10f, 0.19f, 0.40f, 0.82f);
-    private static readonly Rect PlateName = Rect.MinMaxRect(0.45f, 0.56f, 0.90f, 0.84f);
-    private static readonly Rect PlateBar = Rect.MinMaxRect(0.45f, 0.26f, 0.90f, 0.545f);
+    private static readonly Rect FrameInside = Rect.MinMaxRect(0.15f, 0.11f, 0.87f, 0.80f);
+    private static readonly Rect RowRank = Rect.MinMaxRect(0.03f, 0.1f, 0.25f, 0.9f);
+    private static readonly Rect RowName = Rect.MinMaxRect(0.28f, 0.15f, 0.58f, 0.85f);
+    private static readonly Rect RowStar = Rect.MinMaxRect(0.60f, 0.22f, 0.72f, 0.78f);
+    private static readonly Rect RowPoints = Rect.MinMaxRect(0.74f, 0.15f, 0.97f, 0.85f);
+
+    private static readonly Color RowColor = new Color(0.45f, 0.24f, 0.10f, 0.95f);
+    private static readonly Color RowEdgeColor = new Color(0.28f, 0.13f, 0.05f);
 
     private GameObject panel;
     private RectTransform plates;
@@ -18,12 +22,12 @@ public class HUDResults : HUDPanel
     protected override void BuildPanel()
     {
         bool framed = Art != null && Art.scoreboardFrame != null;
-        float height = 470f;
+        float height = 600f;
         float width = 760f;
         if (framed) width = height * Art.scoreboardFrame.rect.width / Art.scoreboardFrame.rect.height;
 
         Vector2 center = new Vector2(0.5f, 0.5f);
-        panel = UIKit.NewPanel("Results", Root, center, center, center, Vector2.zero, new Vector2(width, height));
+        panel = UIKit.NewPanel("Results", Root, center, center, center, new Vector2(0f, 30f), new Vector2(width, height));
         if (framed)
         {
             Image background = panel.GetComponent<Image>();
@@ -55,7 +59,7 @@ public class HUDResults : HUDPanel
         if (!show) return;
 
         if (!platesBuilt) BuildPlates();
-        tipText.text = UIKit.Colored("TIP:", HUDStyle.GoldHex) + " " + hud.CurrentTip();
+        tipText.text = UIKit.Colored("TIP:", HUDStyle.FrameTitleHex) + " " + hud.CurrentTip();
     }
 
     private void BuildPlates()
@@ -94,42 +98,30 @@ public class HUDResults : HUDPanel
 
     private void MakePlate(PlayerEntry entry, int rank, Rect cell)
     {
-        RectTransform slot = UIKit.NewRect(entry.Name + " Slot", plates);
-        UIKit.Stretch(slot, cell);
+        Image row = UIKit.NewImage(entry.Name + " Row", plates);
+        UIKit.Stretch(row.rectTransform, UIKit.Inset(cell, 0.04f));
+        row.color = RowColor;
+        UIKit.AddOutline(row.gameObject, RowEdgeColor, 3f);
 
-        Image plate = UIKit.NewImage(entry.Name + " Plate", slot);
-        if (Art != null && Art.namePlate != null)
-        {
-            plate.sprite = Art.namePlate;
-            AspectRatioFitter fitter = plate.gameObject.AddComponent<AspectRatioFitter>();
-            fitter.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
-            fitter.aspectRatio = Art.namePlate.rect.width / Art.namePlate.rect.height;
-        }
-        else
-        {
-            UIKit.Stretch(plate.rectTransform, Rect.MinMaxRect(0f, 0f, 1f, 1f));
-            plate.color = HUDStyle.Panel;
-        }
-
-        Image badge = UIKit.NewImage("Rank", plate.rectTransform);
-        UIKit.Stretch(badge.rectTransform, UIKit.Inset(PlateCircle, 0.1f));
+        Image badge = UIKit.NewImage("Rank", row.rectTransform);
+        UIKit.Stretch(badge.rectTransform, RowRank);
         badge.sprite = TextureMaker.Circle();
         badge.color = entry.Color;
         badge.preserveAspect = true;
-        TextMeshProUGUI rankText = UIKit.NewAutoText(badge.rectTransform, "Rank", 14f, 60f, TextAlignmentOptions.Center, 0f);
+        TextMeshProUGUI rankText = UIKit.NewAutoText(badge.rectTransform, "Rank", 14f, 50f, TextAlignmentOptions.Center, 0f);
         rankText.text = RankName(rank);
 
-        TextMeshProUGUI nameText = UIKit.NewAutoText(plate.rectTransform, "Name", 12f, 40f, TextAlignmentOptions.Left, 0f);
-        UIKit.Stretch(nameText.rectTransform, PlateName);
-        nameText.text = UIKit.Colored(entry.Name, entry.Color) + "  <size=70%>" + entry.Knockouts + " KO</size>";
+        TextMeshProUGUI nameText = UIKit.NewAutoText(row.rectTransform, "Name", 14f, 56f, TextAlignmentOptions.Left, 0f);
+        UIKit.Stretch(nameText.rectTransform, RowName);
+        nameText.text = UIKit.Colored(entry.Name, entry.Color);
 
         Sprite pointsIcon = null;
         if (Art != null) pointsIcon = Art.pointsIcon;
-        UIKit.NewIcon(plate.rectTransform, pointsIcon, Rect.MinMaxRect(PlateBar.xMin + 0.02f, PlateBar.yMin + 0.03f, PlateBar.xMin + 0.12f, PlateBar.yMax - 0.03f));
+        UIKit.NewIcon(row.rectTransform, pointsIcon, RowStar);
 
-        TextMeshProUGUI pointsText = UIKit.NewAutoText(plate.rectTransform, "Points", 12f, 40f, TextAlignmentOptions.Left, 0f);
-        UIKit.Stretch(pointsText.rectTransform, Rect.MinMaxRect(PlateBar.xMin + 0.14f, PlateBar.yMin, PlateBar.xMax - 0.02f, PlateBar.yMax));
-        pointsText.text = entry.Score + " pts";
+        TextMeshProUGUI pointsText = UIKit.NewAutoText(row.rectTransform, "Points", 14f, 56f, TextAlignmentOptions.Left, 0f);
+        UIKit.Stretch(pointsText.rectTransform, RowPoints);
+        pointsText.text = entry.Score.ToString();
     }
 
     private string RankName(int rank)
