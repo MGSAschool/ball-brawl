@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: f4b7d96feeba9a240b4c7cd9170830c0, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -970,6 +970,14 @@ GameObject:
   - component: {fileID: 987355197}
   - component: {fileID: 987355199}
   - component: {fileID: 987355198}
+  - component: {fileID: 987355200}
+  - component: {fileID: 987355207}
+  - component: {fileID: 987355206}
+  - component: {fileID: 987355205}
+  - component: {fileID: 987355204}
+  - component: {fileID: 987355203}
+  - component: {fileID: 987355202}
+  - component: {fileID: 987355201}
   m_Layer: 0
   m_Name: MatchManager
   m_TagString: Untagged
@@ -1009,27 +1017,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 622b9236555a3dc49b593f20a52b4c9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MatchManager
-  playerPrefab: {fileID: 6289414871106444190, guid: 76185d5b3330b06418b5c11afaaf551f, type: 3}
-  spawnPoints:
-  - {fileID: 1274381158}
-  - {fileID: 1067027648}
-  - {fileID: 1857287265}
-  - {fileID: 134764704}
-  maxPlayers: 4
   minPlayersToStart: 2
-  playerColors:
-  - {r: 0.95, g: 0.3, b: 0.3, a: 1}
-  - {r: 0.3, g: 0.55, b: 0.95, a: 1}
-  - {r: 0.35, g: 0.85, b: 0.4, a: 1}
-  - {r: 1, g: 0.6, b: 0.2, a: 1}
   matchDuration: 180
   minigameDuration: 120
   countdownDuration: 3
-  respawnDelay: 3
-  spawnProtection: 1.5
   knockoutCreditWindow: 5
   selfKnockoutPenalty: 1
-  fallHeight: -15
   resultsLockDuration: 2
   powerUpSpawner: {fileID: 24372773}
 --- !u!4 &987355196
@@ -1078,15 +1071,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BombaClutchMode
   match: {fileID: 987355195}
-  arena: {fileID: 1034040393}
-  bombPrefab: {fileID: 5854813104348491401, guid: 1858ea32dbe64024394efda0847e729b, type: 3}
-  startSpawnInterval: 1.3
-  endSpawnInterval: 0.55
-  startMaxBombs: 10
-  endMaxBombs: 20
-  spawnHeight: 1.2
-  endFuseMultiplier: 0.65
-  endForceMultiplier: 1.2
   pointsPerBomb: 1
   chainRadiusFraction: 0.55
   chainDelay: 0.15
@@ -1103,22 +1087,156 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StaphItMode
   match: {fileID: 987355195}
-  arena: {fileID: 1034040393}
   greenAtStart: {x: 5, y: 8}
   greenAtEnd: {x: 2.5, y: 4.5}
   yellowAtStart: 2.2
   yellowAtEnd: 1.3
   redDuration: 3
   firstRoundBonus: 3
-  radiusAtStart: 7
-  radiusAtEnd: 4
-  minMoveDistance: 12
   survivePoints: 1
   caughtPenalty: 1
   zapForce: 14
   green: {r: 0.3, g: 1, b: 0.45, a: 1}
   yellow: {r: 1, g: 0.85, b: 0.2, a: 1}
   red: {r: 1, g: 0.2, b: 0.2, a: 1}
+--- !u!114 &987355200
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 987355193}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4039284a264085044b1cec4c1f87d1f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerTags
+  match: {fileID: 0}
+  bounds: {fileID: 0}
+  targetCamera: {fileID: 0}
+  referenceResolution: {x: 1920, y: 1080}
+  height: 1
+  matchShowTime: 3
+  fontSize: 30
+  compactScale: 0.65
+--- !u!114 &987355201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 987355193}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c32e34f75a6d574280640b6435442ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerFloorRings
+  match: {fileID: 0}
+  ringDiameter: 1.9
+  ringMaxDrop: 6
+--- !u!114 &987355202
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 987355193}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2238e727577bd264aaf08003f01ebac7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BombSpawner
+  match: {fileID: 987355195}
+  arena: {fileID: 1034040395}
+  bombPrefab: {fileID: 5854813104348491401, guid: 1858ea32dbe64024394efda0847e729b, type: 3}
+  startSpawnInterval: 1.3
+  endSpawnInterval: 0.55
+  startMaxBombs: 10
+  endMaxBombs: 20
+  spawnHeight: 1.2
+  endFuseMultiplier: 0.65
+  endForceMultiplier: 1.2
+  bombsAtStart: 4
+--- !u!114 &987355203
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 987355193}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7118b94c237c064eaaa52d6c7bdb9c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StaphItDome
+--- !u!114 &987355204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 987355193}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e475d453d163f540a05bb31bc93eb23, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StaphItSafeZone
+  arena: {fileID: 1034040395}
+  radiusAtStart: 7
+  radiusAtEnd: 4
+  minMoveDistance: 12
+--- !u!114 &987355205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 987355193}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acaa1e6a231849948bc3853417412a3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PowerUpHints
+--- !u!114 &987355206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 987355193}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fc1f4a248ec9be498c5cd51a595de76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerJoiner
+  playerPrefab: {fileID: 6289414871106444190, guid: 76185d5b3330b06418b5c11afaaf551f, type: 3}
+  maxPlayers: 4
+  playerColors:
+  - {r: 0.95, g: 0.3, b: 0.3, a: 1}
+  - {r: 0.3, g: 0.55, b: 0.95, a: 1}
+  - {r: 0.35, g: 0.85, b: 0.4, a: 1}
+  - {r: 1, g: 0.6, b: 0.2, a: 1}
+--- !u!114 &987355207
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 987355193}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da95ea83eead4a446b04c032541dd7b3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerSpawner
+  spawnPoints:
+  - {fileID: 1274381158}
+  - {fileID: 1067027648}
+  - {fileID: 1857287265}
+  - {fileID: 134764704}
+  respawnDelay: 3
+  spawnProtection: 1.5
+  fallHeight: -15
+  spawnRules: {fileID: 1034040396}
 --- !u!1 &1034040388
 GameObject:
   m_ObjectHideFlags: 0
@@ -1132,6 +1250,15 @@ GameObject:
   - component: {fileID: 1034040390}
   - component: {fileID: 1034040389}
   - component: {fileID: 1034040393}
+  - component: {fileID: 1034040394}
+  - component: {fileID: 1034040395}
+  - component: {fileID: 1034040397}
+  - component: {fileID: 1034040402}
+  - component: {fileID: 1034040401}
+  - component: {fileID: 1034040400}
+  - component: {fileID: 1034040399}
+  - component: {fileID: 1034040396}
+  - component: {fileID: 1034040398}
   m_Layer: 0
   m_Name: Arena
   m_TagString: Untagged
@@ -1186,7 +1313,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: ccdaffab4e4b6cf4ab671e9ab6ac6a20, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1245,12 +1372,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b34f81fc09b74f448883c4c2a1cee3b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FallingPlatforms
-  centerRadius: 7
-  middleDiscRadius: 2.5
-  ringCount: 3
-  targetSectionLength: 6
-  sectionGap: 0.08
-  thickness: 1
+  match: {fileID: 987355195}
   piecesPerFall: {x: 2, y: 3}
   fallInterval: {x: 4, y: 7}
   firstFallDelay: 8
@@ -1265,29 +1387,44 @@ MonoBehaviour:
   timingMultiplier: 0.9
   minWarningDuration: 0.9
   extraDownPerSpeedUp: 2
-  permanentFallsAt: 80
-  islandAppearsAt: 60
-  arenaGoneBy: 10
-  finalPhaseMaxInterval: 4
-  hubRadius: 3.5
-  padRing: {x: 5.5, y: 8.5}
-  padCount: 6
-  padArcDegrees: 40
-  raisedPadHeight: 0.6
-  islandGap: 3
-  islandRiseDuration: 3
-  randomizeIslandSide: 1
-  islandAngle: 90
-  islandModel: {fileID: 0}
-  islandModelMaterial: {fileID: 0}
-  islandModelScale: 0.75
-  freezeInterval: {x: 4, y: 7}
-  padsPerFreeze: {x: 1, y: 2}
-  firstFreezeDelay: 5
-  freezeWarningDuration: 2
-  frozenDuration: 5
+  maxPacedInterval: 4
+--- !u!114 &1034040394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034040388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a844c26f6a4a9ec4aba602eb61577049, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaBounds
+  match: {fileID: 0}
+  arena: {fileID: 1034040395}
+  allowedTimeOutside: 3
+  warningDelay: 0.4
+  edgeTolerance: 0.75
+  floorCheckDistance: 30
+--- !u!114 &1034040395
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034040388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc98ab07e6a3b9b418c2bd1655878575, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaFloor
+  centerRadius: 7
+  middleDiscRadius: 2.5
+  ringCount: 3
+  targetSectionLength: 6
+  sectionGap: 0.08
+  thickness: 1
   warningColor: {r: 1, g: 0.25, b: 0.15, a: 1}
-  iceColor: {r: 0.55, g: 0.85, b: 1, a: 1}
   ringColors:
   - {r: 0.96, g: 0.91, b: 0.78, a: 1}
   - {r: 0.91, g: 0.73, b: 0.36, a: 1}
@@ -1295,7 +1432,128 @@ MonoBehaviour:
   - {r: 0.45, g: 0.65, b: 0.26, a: 1}
   - {r: 0.85, g: 0.7, b: 0.48, a: 1}
   alternateShade: 0.12
+--- !u!114 &1034040396
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034040388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d6446f2c8288e944ad39e5bbe74aed5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaSpawnRules
+  floor: {fileID: 1034040395}
+  island: {fileID: 1034040397}
+--- !u!114 &1034040397
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034040388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 555aa73471104104e878bd68a7a23111, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FinaleIsland
+  islandRadius: 8
+  islandDiscRadius: 2.5
+  islandRingCount: 3
+  islandSectionLength: 4.5
+  islandGap: 3
+  randomizeIslandSide: 1
+  islandAngle: 90
+  islandRiseDuration: 3
+  riseDistance: 25
+  islandModel: {fileID: 4300000, guid: b4f1359abb2c87d43aeeed8ad368e843, type: 2}
+  islandModelMaterial: {fileID: 2100000, guid: dfe65af9a59d76f44b6f5f5f1bedfaeb, type: 2}
+--- !u!114 &1034040398
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034040388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 940f2df7e0b800b4eb277b4e49ed5d1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OutOfBoundsLabels
+  match: {fileID: 0}
+  bounds: {fileID: 0}
+  targetCamera: {fileID: 0}
+  referenceResolution: {x: 1920, y: 1080}
+  labelHeight: 1.6
+  labelFontSize: 34
+--- !u!114 &1034040399
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034040388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01116ca0b9fd8304eabbb78916daf423, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaFinale
   match: {fileID: 987355195}
+  coinRush: {fileID: 1333357110}
+  permanentFallsAt: 80
+  islandAppearsAt: 60
+  stormAt: 40
+  ruinsFraction: 0.35
+  ruinsCoins: 12
+  ruinsCoinDuration: 15
+--- !u!114 &1034040400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034040388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4468786c6e7c18a46b4d09bf04239fe9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaStorm
+  match: {fileID: 0}
+  stormWarning: 5
+  stormColor: {r: 0.55, g: 0.35, b: 1, a: 1}
+--- !u!114 &1034040401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034040388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7db5d966ee4a4b4495422168eeaf821, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StormSky
+  stormSunDim: 0.45
+--- !u!114 &1034040402
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034040388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34774b97b6501604f92fb43cc8bbe0fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::IslandFreezer
+  match: {fileID: 0}
+  freezeInterval: {x: 9, y: 13}
+  padsPerFreeze: {x: 3, y: 5}
+  firstFreezeDelay: 5
+  freezeWarningDuration: 2
+  frozenDuration: 4
+  iceColor: {r: 0.55, g: 0.85, b: 1, a: 1}
 --- !u!1 &1067027647
 GameObject:
   m_ObjectHideFlags: 0
@@ -1388,7 +1646,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CoinRush
   match: {fileID: 987355195}
-  platforms: {fileID: 1034040393}
+  platforms: {fileID: 1034040395}
   coinPrefab: {fileID: 5475976740581906637, guid: 3395cf2a478253541ba76c644e3f6ba7, type: 3}
   firstRushDelay: 30
   rushInterval: {x: 35, y: 50}
@@ -1534,6 +1792,127 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1396269332}
   m_CullTransparentMesh: 1
+--- !u!1001 &1643703624
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8278043704072875263, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 22
+      objectReference: {fileID: 0}
+    - target: {fileID: -6541545219693633386, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.8
+      objectReference: {fileID: 0}
+    - target: {fileID: -6541545219693633386, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.8
+      objectReference: {fileID: 0}
+    - target: {fileID: -6541545219693633386, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.8
+      objectReference: {fileID: 0}
+    - target: {fileID: -6541545219693633386, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6541545219693633386, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6541545219693633386, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6541545219693633386, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -6541545219693633386, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6541545219693633386, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6541545219693633386, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6541545219693633386, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6541545219693633386, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6541545219693633386, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -590223462681332798, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      propertyPath: m_Name
+      value: Stadium
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: -8278043704072875263, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1643703626}
+    - targetCorrespondingSourceObject: {fileID: -8278043704072875263, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1643703630}
+  m_SourcePrefab: {fileID: 8686905464242370237, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+--- !u!1 &1643703625 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -8278043704072875263, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+  m_PrefabInstance: {fileID: 1643703624}
+  m_PrefabAsset: {fileID: 0}
+--- !u!64 &1643703626
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1643703625}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 1050908021570271116, guid: b80065b4268fcad4db21e24aef461a0b, type: 3}
+--- !u!114 &1643703630
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1643703625}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ecc6135645561bf41987ae0a00372b8d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::IslandUndersideCutout
+  radius: 90
+  belowHeight: -14
+  downward: 0.05
 --- !u!1 &1836623552
 GameObject:
   m_ObjectHideFlags: 0
@@ -1748,6 +2127,7 @@ SceneRoots:
   m_Roots:
   - {fileID: 330585546}
   - {fileID: 410087041}
+  - {fileID: 1643703624}
   - {fileID: 1034040392}
   - {fileID: 1886265940}
   - {fileID: 1888617119}

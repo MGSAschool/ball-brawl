@@ -24,7 +24,7 @@ public class UIController : MonoBehaviour
     {
          bool currentMatchState = 
             MatchManager.Instance.State == 
-            MatchManager.MatchState.Playing;
+            MatchState.Playing;
         
         if(!currentMatchState) return;
         isActive = !isActive;

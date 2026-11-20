@@ -1,7 +1,5 @@
-using System;
 using UnityEngine;
 
-// Collectable coin spawned by CoinRush. Any brawler who touches it during a match scores.
 public class Coin : MonoBehaviour
 {
     [SerializeField] private int value = 1;
@@ -9,32 +7,27 @@ public class Coin : MonoBehaviour
     [SerializeField] private float bobHeight = 0.25f;
     [SerializeField] private float bobSpeed = 2.5f;
 
-    public event Action<Coin> Collected;
-
-    private Vector3 basePosition;
+    private Vector3 startPosition;
     private float bobOffset;
 
     private void Start()
     {
-        basePosition = transform.position;
-        bobOffset = UnityEngine.Random.value * Mathf.PI * 2f;
+        startPosition = transform.position;
+        bobOffset = Random.value * Mathf.PI * 2f;
     }
 
     private void Update()
     {
         transform.Rotate(Vector3.up, spinSpeed * Time.deltaTime, Space.World);
-        transform.position = basePosition + Vector3.up * (Mathf.Sin(Time.time * bobSpeed + bobOffset) * bobHeight);
+        float bob = Mathf.Sin(Time.time * bobSpeed + bobOffset) * bobHeight;
+        transform.position = startPosition + Vector3.up * bob;
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        var player = other.GetComponentInParent<BrawlPlayer>();
+        BrawlPlayer player = other.GetComponentInParent<BrawlPlayer>();
         if (player == null || MatchManager.Instance == null) return;
 
-        if (MatchManager.Instance.AwardCoins(player, value))
-        {
-            Collected?.Invoke(this);
-            Destroy(gameObject);
-        }
+        if (MatchManager.Instance.AwardCoins(player, value)) Destroy(gameObject);
     }
 }
