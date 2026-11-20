@@ -4,26 +4,24 @@ using UnityEngine.UI;
 
 public class HUDGuide : HUDPanel
 {
-    private static readonly Rect FrameInside = Rect.MinMaxRect(0.15f, 0.11f, 0.87f, 0.80f);
+    private static readonly Rect FrameInside = Rect.MinMaxRect(0.14f, 0.10f, 0.88f, 0.80f);
     private const float LabelColumn = 0.25f;
     private const float HeaderHeight = 0.18f;
+    private const float FrameSize = 760f;
+    private const float FrameGap = 30f;
 
     private GameObject panel;
     private TextMeshProUGUI goalText;
+    private string labelHex = HUDStyle.GoldHex;
 
     protected override void BuildPanel()
     {
-        bool framed = Art != null && Art.howToPlayFrame != null;
         Vector2 center = new Vector2(0.5f, 0.5f);
-        panel = UIKit.NewPanel("Guide Panel", Root, center, center, center, new Vector2(0f, -30f), new Vector2(1260f, 794f));
+        panel = UIKit.NewPanel("Guide Panel", Root, center, center, center, new Vector2(0f, -30f), new Vector2(FrameSize * 2f + FrameGap, FrameSize));
 
-        Image background = panel.GetComponent<Image>();
-        background.raycastTarget = true;
-        if (framed)
-        {
-            background.sprite = Art.howToPlayFrame;
-            background.color = Color.white;
-        }
+        Image clickArea = panel.GetComponent<Image>();
+        clickArea.raycastTarget = true;
+        clickArea.color = Color.clear;
 
         Button closeButton = panel.AddComponent<Button>();
         closeButton.transition = Selectable.Transition.None;
@@ -32,18 +30,46 @@ public class HUDGuide : HUDPanel
         closeButton.navigation = noNavigation;
         closeButton.onClick.AddListener(hud.ToggleGuide);
 
-        RectTransform content = UIKit.NewRect("Content", panel.transform);
-        if (framed) UIKit.Stretch(content, FrameInside);
-        else UIKit.Stretch(content, Rect.MinMaxRect(0.03f, 0.04f, 0.97f, 0.96f));
-        content.offsetMin = new Vector2(30f, 22f);
-        content.offsetMax = new Vector2(-30f, -22f);
+        Sprite howToPlaySprite = null;
+        Sprite controlsSprite = null;
+        if (Art != null)
+        {
+            howToPlaySprite = Art.howToPlayFrame;
+            controlsSprite = Art.controlsFrame;
+        }
+        if (howToPlaySprite != null && controlsSprite != null) labelHex = HUDStyle.FrameTitleHex;
 
-        goalText = UIKit.NewAutoText(content, "Goal", 14f, 32f, TextAlignmentOptions.Center, 0f);
-        UIKit.Stretch(goalText.rectTransform, Rect.MinMaxRect(0f, 0.82f, 1f, 1f));
+        float half = FrameSize / (FrameSize * 2f + FrameGap);
+        RectTransform howToPlay = MakeFrame("How To Play", howToPlaySprite, Rect.MinMaxRect(0f, 0f, half, 1f));
+        RectTransform controls = MakeFrame("Controls", controlsSprite, Rect.MinMaxRect(1f - half, 0f, 1f, 1f));
 
-        BuildControlsGrid(content);
-        BuildFooter(content);
+        goalText = UIKit.NewAutoText(howToPlay, "Goal", 14f, 34f, TextAlignmentOptions.Center, 0f);
+        UIKit.Stretch(goalText.rectTransform, Rect.MinMaxRect(0f, 0.5f, 1f, 1f));
+        BuildFooter(howToPlay);
+
+        BuildControlsGrid(controls);
         panel.SetActive(false);
+    }
+
+    private RectTransform MakeFrame(string name, Sprite sprite, Rect anchors)
+    {
+        Image frame = UIKit.NewImage(name, panel.transform);
+        UIKit.Stretch(frame.rectTransform, anchors);
+
+        RectTransform content = UIKit.NewRect("Content", frame.transform);
+        if (sprite != null)
+        {
+            frame.sprite = sprite;
+            UIKit.Stretch(content, FrameInside);
+        }
+        else
+        {
+            frame.color = HUDStyle.Panel;
+            UIKit.Stretch(content, Rect.MinMaxRect(0.04f, 0.04f, 0.96f, 0.96f));
+        }
+        content.offsetMin = new Vector2(16f, 16f);
+        content.offsetMax = new Vector2(-16f, -16f);
+        return content;
     }
 
     private void Update()
@@ -60,7 +86,7 @@ public class HUDGuide : HUDPanel
     {
         string plusOne = UIKit.Colored("+1", HUDStyle.GoodHex);
         string minusOne = UIKit.Colored("-1", HUDStyle.BadHex);
-        string mode = UIKit.Colored(GameModeInfo.Name(Match.Mode), HUDStyle.GoldHex) + "   ";
+        string mode = UIKit.Colored(GameModeInfo.Name(Match.Mode), labelHex) + "   ";
 
         if (Match.Mode == GameMode.StaphIt)
         {
@@ -73,13 +99,13 @@ public class HUDGuide : HUDPanel
                    "<size=80%>" + plusOne + " per bomb set off     " + minusOne + " falling off on your own</size>";
         }
         return mode + "Knock rivals off the arena.\n" +
-               "<size=80%>" + plusOne + " knock-off     " + UIKit.Colored("+1", HUDStyle.GoldHex) + " coin     " + minusOne + " falling off on your own</size>";
+               "<size=80%>" + plusOne + " knock-off     " + UIKit.Colored("+1", labelHex) + " coin     " + minusOne + " falling off on your own</size>";
     }
 
     private void BuildControlsGrid(RectTransform content)
     {
         RectTransform grid = UIKit.NewRect("Controls", content);
-        UIKit.Stretch(grid, Rect.MinMaxRect(0f, 0.2f, 1f, 0.79f));
+        UIKit.Stretch(grid, Rect.MinMaxRect(0f, 0f, 1f, 1f));
 
         string[] schemes = ControlHints.Schemes;
         float column = (1f - LabelColumn) / schemes.Length;
@@ -119,7 +145,7 @@ public class HUDGuide : HUDPanel
 
         TextMeshProUGUI labelText = UIKit.NewAutoText(grid, label, 12f, 28f, TextAlignmentOptions.Left, 0f);
         UIKit.Stretch(labelText.rectTransform, Rect.MinMaxRect(0.015f, top - rowHeight, LabelColumn, top));
-        labelText.text = UIKit.Colored(label, HUDStyle.GoldHex);
+        labelText.text = UIKit.Colored(label, labelHex);
         if (note.Length > 0) labelText.text += "\n<size=60%>" + UIKit.Colored(note, HUDStyle.SoftTextHex) + "</size>";
         labelText.lineSpacing = -20f;
 
@@ -134,10 +160,10 @@ public class HUDGuide : HUDPanel
     private void BuildFooter(RectTransform content)
     {
         TextMeshProUGUI footer = UIKit.NewAutoText(content, "Footer", 12f, 24f, TextAlignmentOptions.Center, 0f);
-        UIKit.Stretch(footer.rectTransform, Rect.MinMaxRect(0f, 0f, 1f, 0.18f));
+        UIKit.Stretch(footer.rectTransform, Rect.MinMaxRect(0f, 0f, 1f, 0.46f));
 
         string slash = UIKit.Colored("/", HUDStyle.SoftTextHex);
-        footer.text = UIKit.Colored("POWER-UPS", HUDStyle.GoldHex) + "   Hold 2   |   Use fires the left one   |   The number (1-3) is its strength\n" +
+        footer.text = UIKit.Colored("POWER-UPS", labelHex) + "\nHold 2  -  Use fires the left one\nThe number (1-3) is its strength\n" +
                       "<size=80%>" + UIKit.Colored("Close", HUDStyle.SoftTextHex) + " " + ControlHints.Cap("H") + " " + slash + " " +
                       ControlHints.Cap("Select") + " " + UIKit.Colored("or click the card", HUDStyle.SoftTextHex) + "</size>";
     }

@@ -9,6 +9,7 @@ public static class HUDStyle
     public static readonly Color Coin = new Color(1f, 0.84f, 0.3f);
 
     public const string GoldHex = "FFD64D";
+    public const string FrameTitleHex = "8A3A05";
     public const string SoftTextHex = "d8d0ff";
     public const string GoodHex = "9cff7a";
     public const string BadHex = "ff6b6b";

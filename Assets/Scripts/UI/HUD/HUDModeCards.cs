@@ -33,6 +33,25 @@ public class HUDModeCards : HUDPanel
             UIKit.Stretch(slot, Rect.MinMaxRect(0f, 1f - (i + 1) * rowHeight + 0.02f, 1f, 1f - i * rowHeight - 0.02f));
             cards.Add(MakeCard(slot, mode));
         }
+
+        MakeTitleLabel();
+    }
+
+    private void MakeTitleLabel()
+    {
+        if (Art == null || Art.modeLabel == null) return;
+
+        float columnHeight = CardHeight * GameModeInfo.Count;
+        float labelWidth = 0.8f;
+        float artAspect = Art.modeLabel.rect.width * HUDMenuButtons.ButtonArtArea.width / (Art.modeLabel.rect.height * HUDMenuButtons.ButtonArtArea.height);
+        float labelHeight = ColumnWidth * labelWidth / artAspect / columnHeight;
+        float gap = 10f / columnHeight;
+
+        Image label = UIKit.NewImage("Game Mode Label", column.transform);
+        label.sprite = Art.modeLabel;
+        label.preserveAspect = true;
+        Rect area = Rect.MinMaxRect(0.5f - labelWidth / 2f, 1f + gap, 0.5f + labelWidth / 2f, 1f + gap + labelHeight);
+        UIKit.StretchToArt(label.rectTransform, area, HUDMenuButtons.ButtonArtArea);
     }
 
     private void Update()

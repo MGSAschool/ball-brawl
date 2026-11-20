@@ -6,14 +6,18 @@ using UnityEngine.UI;
 public class HUDPlayerCards : HUDPanel
 {
     private const float FrameHeight = 165f;
-    private const float StripHeight = 56f;
-    private const float Gap = 8f;
+    private const float StripHeight = 46f;
+    private const float Gap = 6f;
+
+    private static readonly Rect FrameArtArea = Rect.MinMaxRect(0.121f, 0.204f, 0.867f, 0.781f);
+    private static readonly Rect CoinsNumber = Rect.MinMaxRect(0.508f, 0.315f, 0.604f, 0.407f);
+    private static readonly Rect PointsNumber = Rect.MinMaxRect(0.669f, 0.315f, 0.833f, 0.407f);
 
     private static readonly Rect[] Slots =
     {
-        Rect.MinMaxRect(0.076f, 0.28f, 0.327f, 0.767f),
-        Rect.MinMaxRect(0.373f, 0.28f, 0.625f, 0.767f),
-        Rect.MinMaxRect(0.670f, 0.28f, 0.922f, 0.767f)
+        Rect.MinMaxRect(0.185f, 0.333f, 0.393f, 0.685f),
+        Rect.MinMaxRect(0.440f, 0.433f, 0.583f, 0.676f),
+        Rect.MinMaxRect(0.615f, 0.433f, 0.758f, 0.676f)
     };
 
     private static readonly Color[] LevelColors =
@@ -28,6 +32,7 @@ public class HUDPlayerCards : HUDPanel
         public TextMeshProUGUI Points;
         public TextMeshProUGUI Coins;
         public TextMeshProUGUI Status;
+        public GameObject Strip;
         public PowerupInventoryUI Box;
         public Image[] Badges = new Image[0];
         public TextMeshProUGUI[] BadgeNumbers = new TextMeshProUGUI[0];
@@ -56,6 +61,7 @@ public class HUDPlayerCards : HUDPanel
             card.Points.text = entry.Score.ToString();
             card.Coins.text = entry.Coins.ToString();
             card.Status.text = StatusText(entry);
+            card.Strip.SetActive(card.Status.text.Length > 0);
             RefreshLevels(entry, card);
         }
     }
@@ -112,7 +118,12 @@ public class HUDPlayerCards : HUDPanel
 
         bool framed = Art != null && Art.inventoryFrame != null;
         float width = 300f;
-        if (framed) width = FrameHeight * Art.inventoryFrame.rect.width / Art.inventoryFrame.rect.height;
+        if (framed)
+        {
+            float artWidth = Art.inventoryFrame.rect.width * FrameArtArea.width;
+            float artHeight = Art.inventoryFrame.rect.height * FrameArtArea.height;
+            width = FrameHeight * artWidth / artHeight;
+        }
         float height = FrameHeight + Gap + StripHeight;
 
         float margin = hud.CornerMargin;
@@ -134,15 +145,32 @@ public class HUDPlayerCards : HUDPanel
         }
 
         Image frame = UIKit.NewImage("Inventory", root);
-        UIKit.Stretch(frame.rectTransform, frameRect);
-        if (framed) frame.sprite = Art.inventoryFrame;
-        else frame.color = HUDStyle.Panel;
+        if (framed)
+        {
+            frame.sprite = Art.inventoryFrame;
+            UIKit.StretchToArt(frame.rectTransform, frameRect, FrameArtArea);
+        }
+        else
+        {
+            UIKit.Stretch(frame.rectTransform, frameRect);
+            frame.color = HUDStyle.Panel;
+        }
 
+        PlayerCard card = new PlayerCard();
         MakePortrait(entry, frame.rectTransform);
-        PlayerCard card = MakeStatsStrip(entry, root, stripRect);
+        MakeCounters(card, frame.rectTransform);
+        MakeStatsStrip(entry, card, root, stripRect);
         if (hud.PowerUpBoxPrefab != null && entry.PowerUps != null) AttachPowerUpBox(entry, index, frame.rectTransform, card);
-        MakeUseKeyHint(entry, frame.rectTransform);
         return card;
+    }
+
+    private void MakeCounters(PlayerCard card, RectTransform frame)
+    {
+        card.Coins = UIKit.NewAutoText(frame, "Coins", 10f, 30f, TextAlignmentOptions.Left, 0f);
+        UIKit.Stretch(card.Coins.rectTransform, CoinsNumber);
+
+        card.Points = UIKit.NewAutoText(frame, "Points", 10f, 30f, TextAlignmentOptions.Left, 0f);
+        UIKit.Stretch(card.Points.rectTransform, PointsNumber);
     }
 
     private void MakePortrait(PlayerEntry entry, RectTransform frame)
@@ -157,41 +185,17 @@ public class HUDPlayerCards : HUDPanel
         label.text = entry.Name;
     }
 
-    private PlayerCard MakeStatsStrip(PlayerEntry entry, RectTransform root, Rect stripRect)
+    private void MakeStatsStrip(PlayerEntry entry, PlayerCard card, RectTransform root, Rect stripRect)
     {
         Image strip = UIKit.NewImage("Stats", root);
         UIKit.Stretch(strip.rectTransform, stripRect);
         strip.color = HUDStyle.Panel;
         UIKit.AddOutline(strip.gameObject, entry.Color, 3f);
 
-        Sprite pointsIcon = null;
-        Sprite coinIcon = null;
-        if (Art != null)
-        {
-            pointsIcon = Art.pointsIcon;
-            coinIcon = Art.coinIcon;
-        }
+        card.Strip = strip.gameObject;
 
-        PlayerCard card = new PlayerCard();
-        UIKit.NewIcon(strip.rectTransform, pointsIcon, Rect.MinMaxRect(0.03f, 0.12f, 0.13f, 0.88f));
-        card.Points = UIKit.NewAutoText(strip.rectTransform, "Points", 14f, 34f, TextAlignmentOptions.Left, 0f);
-        UIKit.Stretch(card.Points.rectTransform, Rect.MinMaxRect(0.14f, 0.1f, 0.28f, 0.9f));
-
-        UIKit.NewIcon(strip.rectTransform, coinIcon, Rect.MinMaxRect(0.28f, 0.12f, 0.38f, 0.88f));
-        card.Coins = UIKit.NewAutoText(strip.rectTransform, "Coins", 14f, 34f, TextAlignmentOptions.Left, 0f);
-        UIKit.Stretch(card.Coins.rectTransform, Rect.MinMaxRect(0.39f, 0.1f, 0.5f, 0.9f));
-
-        card.Status = UIKit.NewAutoText(strip.rectTransform, "Status", 10f, 22f, TextAlignmentOptions.Right, 0f);
-        UIKit.Stretch(card.Status.rectTransform, Rect.MinMaxRect(0.5f, 0.1f, 0.97f, 0.9f));
-        return card;
-    }
-
-    private void MakeUseKeyHint(PlayerEntry entry, RectTransform frame)
-    {
-        Rect slot = Slots[1];
-        TextMeshProUGUI hint = UIKit.NewAutoText(frame, "Use Key", 10f, 20f, TextAlignmentOptions.Center, 0f);
-        UIKit.Stretch(hint.rectTransform, Rect.MinMaxRect(slot.xMin - 0.04f, slot.yMin - 0.22f, slot.xMax + 0.04f, slot.yMin - 0.01f));
-        hint.text = "USE " + ControlHints.CapFor(entry.ControlScheme, ControlHints.Action.UsePowerUp);
+        card.Status = UIKit.NewAutoText(strip.rectTransform, "Status", 10f, 22f, TextAlignmentOptions.Center, 0f);
+        UIKit.Stretch(card.Status.rectTransform, Rect.MinMaxRect(0.03f, 0.1f, 0.97f, 0.9f));
     }
 
     private void AttachPowerUpBox(PlayerEntry entry, int index, RectTransform frame, PlayerCard card)
