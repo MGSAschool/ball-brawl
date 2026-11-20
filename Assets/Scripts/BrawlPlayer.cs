@@ -43,12 +43,14 @@ public class BrawlPlayer : MonoBehaviour, IKnockable
     private bool IsKnockedBack => Time.time < knockedBackUntil;
     private float CurrentMoveSpeed => moveSpeed * (HasSpeedBoost ? speedBoostMultiplier : 1f);
     private float GroundRayLength => (sphere != null ? sphere.radius * transform.lossyScale.y : 0.5f) + groundCheckDistance;
+    private RumbleControls rumbleControls;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
         sphere = GetComponent<SphereCollider>();
+        rumbleControls = GetComponent<RumbleControls>();
     }
 
     public void OnMove(InputValue value)
@@ -175,6 +177,7 @@ public class BrawlPlayer : MonoBehaviour, IKnockable
 
             float force = baseHitForce * (HasSuperKnockback ? superKnockbackMultiplier : 1f);
             otherPlayer.ApplyKnockback(launchDirection.normalized, force, this);
+            rumbleControls.SetMotorSpeed(0.5f, 1.5f, 0.3f);
         }
     }
 }
