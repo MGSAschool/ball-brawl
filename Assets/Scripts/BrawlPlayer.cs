@@ -163,7 +163,9 @@ public class BrawlPlayer : MonoBehaviour, IKnockable
         // Reset existing velocity so knockback takes full effect
         rb.linearVelocity = Vector3.zero;
         rb.AddForce(direction * force, ForceMode.Impulse);
+        rumbleControls.SetMotorSpeed(0.5f, 1.5f, 0.3f);
         knockedBackUntil = Time.time + knockbackStunDuration;
+        
     }
 
     void OnCollisionEnter(Collision collision)
@@ -177,7 +179,7 @@ public class BrawlPlayer : MonoBehaviour, IKnockable
 
             float force = baseHitForce * (HasSuperKnockback ? superKnockbackMultiplier : 1f);
             otherPlayer.ApplyKnockback(launchDirection.normalized, force, this);
-            rumbleControls.SetMotorSpeed(0.5f, 1.5f, 0.3f);
+            
         }
     }
 }
