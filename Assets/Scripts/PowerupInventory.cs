@@ -26,17 +26,18 @@ public class PowerupInventory : MonoBehaviour
             playerInput.PowerupPressed -= UsePowerUp;
     }
 
-    public void StorePowerUp(PowerUpModifier powerUp)
+    public bool StorePowerUp(PowerUpModifier powerUp)
     {
-        if (powerUp == null || maxCapacity <= 0) return;
+        if (powerUp == null || maxCapacity <= 0) return false;
 
         if (powerupInventory.Count >= maxCapacity)
         {
-            powerupInventory.RemoveAt(0);
+            return false;
         }
 
         powerupInventory.Add(powerUp);
         OnPowerupPickup?.Invoke();
+        return true;
     }
 
     private void UsePowerUp()
