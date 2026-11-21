@@ -6,10 +6,14 @@ public class ArenaSection : MonoBehaviour
     public enum SectionState { Solid, Warning, Falling, Gone, Rising }
 
     private const float ShakeAmount = 0.08f;
+    private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+    private static readonly int GltfColorId = Shader.PropertyToID("baseColorFactor");
 
     private Rigidbody rb;
     private MeshCollider col;
-    private SectionPaint paint;
+    private MeshRenderer rend;
+    private MaterialPropertyBlock colorBlock;
+    private Color baseColor;
     private Vector3 homePosition;
     private Color warningColor;
     private float stateStart;
@@ -29,23 +33,23 @@ public class ArenaSection : MonoBehaviour
     public float StartAngle { get; private set; }
     public float EndAngle { get; private set; }
 
-    public void Init(float innerRadius, float outerRadius, float startAngle, float endAngle, Color baseColor, Color warning)
+    public void Init(float innerRadius, float outerRadius, float startAngle, float endAngle, Color color, Color warning)
     {
         InnerRadius = innerRadius;
         OuterRadius = outerRadius;
         StartAngle = startAngle;
         EndAngle = endAngle;
         warningColor = warning;
+        baseColor = color;
 
         rb = GetComponent<Rigidbody>();
         col = GetComponent<MeshCollider>();
-        paint = GetComponent<SectionPaint>();
-        if (paint == null) paint = gameObject.AddComponent<SectionPaint>();
+        rend = GetComponent<MeshRenderer>();
 
         rb.isKinematic = true;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         homePosition = transform.position;
-        paint.SetBaseColor(baseColor);
+        ShowColor(baseColor);
     }
 
     public void TriggerFall(float warning, float fall, float gone, float rise, float distance)
@@ -61,54 +65,15 @@ public class ArenaSection : MonoBehaviour
         Sfx.Play(Sound.Rumble, transform.position, 0.6f);
     }
 
-    public void SetHome(Vector3 position)
-    {
-        homePosition = position;
-        if (State == SectionState.Solid)
-        {
-            rb.position = position;
-            transform.position = position;
-        }
-    }
-
-    public void HideImmediate()
-    {
-        ClearIce();
-        StayDown = true;
-        Enter(SectionState.Gone);
-        SetVisible(false);
-        col.enabled = false;
-    }
-
-    public void Emerge(float rise, float distance)
-    {
-        StayDown = false;
-        riseDuration = rise;
-        fallDistance = distance;
-        rb.position = homePosition + Vector3.down * distance;
-        transform.position = rb.position;
-        paint.ShowBase();
-        SetVisible(true);
-        col.enabled = true;
-        Enter(SectionState.Rising);
-    }
-
     public void ResetImmediate()
     {
-        ClearIce();
         StayDown = false;
         Enter(SectionState.Solid);
         rb.position = homePosition;
         transform.position = homePosition;
         SetVisible(true);
         col.enabled = true;
-        paint.ShowBase();
-    }
-
-    public void Tint(Color color, float amount)
-    {
-        if (State != SectionState.Solid) return;
-        paint.Show(Color.Lerp(paint.BaseColor, color, Mathf.Clamp01(amount)));
+        ShowColor(baseColor);
     }
 
     public Vector3 RandomTopPoint(Vector3 arenaCenter, float topY, float margin)
@@ -140,15 +105,15 @@ public class ArenaSection : MonoBehaviour
         rb.MovePosition(homePosition + new Vector3(jitter.x, 0f, jitter.y));
 
         float flash = Mathf.PingPong(elapsed * Mathf.Lerp(3f, 10f, t), 1f);
-        paint.Show(Color.Lerp(paint.BaseColor, warningColor, flash));
+        ShowColor(Color.Lerp(baseColor, warningColor, flash));
 
         if (elapsed >= warningDuration)
         {
-            paint.Show(warningColor);
+            ShowColor(warningColor);
             Enter(SectionState.Falling);
             Sfx.Play(Sound.Crumble, transform.position, 0.6f);
 
-            Bounds bounds = GetComponent<MeshRenderer>().bounds;
+            Bounds bounds = rend.bounds;
             Vfx.Dust(bounds.center + Vector3.up * bounds.extents.y, 1f);
         }
     }
@@ -169,7 +134,7 @@ public class ArenaSection : MonoBehaviour
     {
         if (StayDown || elapsed < goneDuration) return;
 
-        paint.ShowBase();
+        ShowColor(baseColor);
         SetVisible(true);
         col.enabled = true;
         Enter(SectionState.Rising);
@@ -193,17 +158,21 @@ public class ArenaSection : MonoBehaviour
         stateStart = Time.time;
     }
 
-    private void ClearIce()
+    private void ShowColor(Color color)
     {
-        SectionFreeze ice = GetComponent<SectionFreeze>();
-        if (ice != null) ice.Clear();
+        if (colorBlock == null) colorBlock = new MaterialPropertyBlock();
+
+        rend.GetPropertyBlock(colorBlock);
+        colorBlock.SetColor(BaseColorId, color);
+        colorBlock.SetColor(GltfColorId, color);
+        rend.SetPropertyBlock(colorBlock);
     }
 
     private void SetVisible(bool visible)
     {
-        foreach (Renderer rend in GetComponentsInChildren<Renderer>(true))
+        foreach (Renderer child in GetComponentsInChildren<Renderer>(true))
         {
-            rend.enabled = visible;
+            child.enabled = visible;
         }
     }
 }

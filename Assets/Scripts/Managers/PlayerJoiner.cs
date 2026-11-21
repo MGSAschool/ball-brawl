@@ -17,6 +17,7 @@ public class PlayerJoiner : MonoBehaviour
 
     private MatchManager match;
     private readonly List<InputDevice> joinedGamepads = new List<InputDevice>();
+    private readonly Dictionary<PlayerEntry, List<System.Type>> hintsShown = new Dictionary<PlayerEntry, List<System.Type>>();
     private bool wasdJoined;
     private bool arrowsJoined;
 
@@ -142,6 +143,7 @@ public class PlayerJoiner : MonoBehaviour
         PaintBall(input.gameObject, index, entry.Color);
         TurnOffPlayerCameras(input.gameObject);
         match.AddPlayer(entry);
+        ListenForFirstPickups(entry);
 
         string schemeName = ControlHints.SchemeLabel(controlScheme);
         string powerUpKey = ControlHints.Key(controlScheme, ControlHints.Action.UsePowerUp);
@@ -149,6 +151,25 @@ public class PlayerJoiner : MonoBehaviour
         Sfx.Play(Sound.Join);
         Vfx.Poof(player.transform.position, entry.Color);
         return true;
+    }
+
+    private void ListenForFirstPickups(PlayerEntry entry)
+    {
+        if (entry.PowerUps == null) return;
+        hintsShown[entry] = new List<System.Type>();
+        entry.PowerUps.Collected += powerUp => ShowPowerUpHint(entry, powerUp);
+    }
+
+    private void ShowPowerUpHint(PlayerEntry entry, PowerUpModifier powerUp)
+    {
+        List<System.Type> shown = hintsShown[entry];
+        System.Type type = powerUp.GetType();
+        if (shown.Contains(type)) return;
+        shown.Add(type);
+
+        string name = PowerUpLook.DisplayName(powerUp);
+        string key = ControlHints.Key(entry.ControlScheme, ControlHints.Action.UsePowerUp);
+        match.Announce(entry.Name + ": " + name + " stored - " + key + " uses your oldest power-up");
     }
 
     private Color ColorForSlot(int index)

@@ -74,15 +74,6 @@ public class CoinRush : MonoBehaviour
         }
     }
 
-    public void StartRushNow(string announcement, int coinCount, float duration)
-    {
-        if (!matchRunning) return;
-        if (IsActive) EndRush(false);
-
-        StartRush(0f, coinCount, duration);
-        match.Announce(announcement);
-    }
-
     private void StartRush(float minRadius, int coinCount, float duration)
     {
         if (coinPrefab == null) return;

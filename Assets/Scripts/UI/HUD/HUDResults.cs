@@ -47,7 +47,7 @@ public class HUDResults : HUDPanel
         panel.SetActive(false);
     }
 
-    private void Update()
+    public override void Tick()
     {
         if (hud == null || Match == null) return;
 
@@ -67,7 +67,7 @@ public class HUDResults : HUDPanel
         platesBuilt = true;
         for (int i = plates.childCount - 1; i >= 0; i--)
         {
-            Destroy(plates.GetChild(i).gameObject);
+            Object.Destroy(plates.GetChild(i).gameObject);
         }
 
         List<PlayerEntry> ranked = RankByScore();
