@@ -20,6 +20,15 @@ public class UIController : MonoBehaviour
             button.onClick.AddListener(() => OnButtonPress(button.name));
         }
     }
+
+    void OnDisable()
+    {
+        uI_InputReader.OnPausePress -= OnPause;
+        foreach (Button button in pauseButtons)
+        {
+            button.onClick.RemoveAllListeners();
+        }
+    }
     void OnPause()
     {
          bool currentMatchState = 
@@ -48,6 +57,7 @@ public class UIController : MonoBehaviour
             
             case "Exit":
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            Time.timeScale = 1f;
             break;
 
             default: 
