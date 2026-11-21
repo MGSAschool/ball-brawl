@@ -13,12 +13,10 @@ public class ArenaCamera : MonoBehaviour
 
     private Vector3 velocity;
     private Camera cam;
-    private ArenaFinale finale;
 
     private void Awake()
     {
         if (match == null) match = FindAnyObjectByType<MatchManager>();
-        finale = FindAnyObjectByType<ArenaFinale>();
         cam = GetComponent<Camera>();
     }
 
@@ -29,13 +27,6 @@ public class ArenaCamera : MonoBehaviour
 
         Bounds view = new Bounds(center, Vector3.zero);
         bool anyPlayer = AddPlayersToView(ref view);
-
-        Bounds finaleView;
-        bool playing = match != null && match.State == MatchState.Playing;
-        if (anyPlayer && playing && finale != null && finale.TryGetFinaleView(out finaleView))
-        {
-            view.Encapsulate(finaleView);
-        }
 
         float distance = minDistance * 1.5f;
         if (anyPlayer)

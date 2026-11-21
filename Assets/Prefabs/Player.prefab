@@ -160,7 +160,6 @@ GameObject:
   - component: {fileID: 7307333872077393931}
   - component: {fileID: 8261606564612869855}
   - component: {fileID: 6063585696531384910}
-  - component: {fileID: 6373415199252719996}
   - component: {fileID: 6634443300559391164}
   m_Layer: 0
   m_Name: Player
@@ -529,21 +528,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a1e1696e9fddcbe4c89b4df935a43dbc, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BallTrail
+  m_EditorClassIdentifier: Assembly-CSharp::BallEffects
   trailSpeed: 12
   trailTime: 0.25
---- !u!114 &6373415199252719996
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6289414871106444190}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ef7b3063ec37c154b82ab8ea46c9ba01, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BallHitEffects
   landingImpact: 4
 --- !u!114 &6634443300559391164
 MonoBehaviour:

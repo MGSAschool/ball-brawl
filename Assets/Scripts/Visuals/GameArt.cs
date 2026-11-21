@@ -15,6 +15,9 @@ public class GameArt : ScriptableObject
     [Header("Effects on the ball")]
     public GameObject shieldBubble;
 
+    [Header("Arena")]
+    public GameObject arenaModel;
+
     [Header("Minigames")]
     public GameObject bombModel;
 

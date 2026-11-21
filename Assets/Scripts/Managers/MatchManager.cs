@@ -37,8 +37,6 @@ public class MatchManager : MonoBehaviour
     public IReadOnlyList<PlayerEntry> Players { get { return players; } }
     public IReadOnlyList<PlayerEntry> Winners { get { return winners; } }
     public int MinPlayersToStart { get { return minPlayersToStart; } }
-    public PlayerSpawner Spawner { get { return spawner; } }
-
     public float Duration
     {
         get
@@ -175,15 +173,6 @@ public class MatchManager : MonoBehaviour
         Vfx.KnockOutFlare(new Vector3(position.x, Mathf.Max(position.y, -3f), position.z), entry.Color);
 
         if (State == MatchState.Playing) ScoreFall(entry);
-        spawner.StartRespawn(entry);
-    }
-
-    public void KnockOutWithoutPenalty(BrawlPlayer player)
-    {
-        PlayerEntry entry = EntryFor(player);
-        if (entry == null || entry.IsRespawning) return;
-
-        Vfx.KnockOutFlare(player.transform.position, entry.Color);
         spawner.StartRespawn(entry);
     }
 

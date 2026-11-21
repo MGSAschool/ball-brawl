@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
@@ -13,6 +14,7 @@ public class MatchHUD : MonoBehaviour
     [SerializeField] private float cornerMargin = 24f;
     [SerializeField] private float behindAlpha = 0.3f;
 
+    private readonly List<HUDPanel> panels = new List<HUDPanel>();
     private RectTransform safeArea;
     private Rect appliedSafeArea;
     private PlayerJoiner joiner;
@@ -84,6 +86,11 @@ public class MatchHUD : MonoBehaviour
         if (events != null && events.currentSelectedGameObject != null) events.SetSelectedGameObject(null);
 
         if (!InMenu) GuideOpen = false;
+
+        foreach (HUDPanel panel in panels)
+        {
+            panel.Tick();
+        }
     }
 
     public void ToggleGuide()
@@ -104,10 +111,11 @@ public class MatchHUD : MonoBehaviour
         if (state == MatchState.Countdown) GuideOpen = false;
     }
 
-    private void AddPanel<T>() where T : HUDPanel
+    private void AddPanel<T>() where T : HUDPanel, new()
     {
-        T panel = gameObject.AddComponent<T>();
+        T panel = new T();
         panel.Build(this);
+        panels.Add(panel);
     }
 
     private void ApplySafeArea()
@@ -127,5 +135,64 @@ public class MatchHUD : MonoBehaviour
         if (EventSystem.current != null) return;
         if (FindAnyObjectByType<EventSystem>() != null) return;
         new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
+    }
+}
+
+public abstract class HUDPanel
+{
+    protected MatchHUD hud;
+
+    protected MatchManager Match { get { return hud.Match; } }
+    protected RectTransform Root { get { return hud.SafeArea; } }
+    protected GameArt Art { get { return hud.Art; } }
+
+    protected bool LobbyFull
+    {
+        get { return Match.Players.Count >= hud.MaxPlayers; }
+    }
+
+    public void Build(MatchHUD owner)
+    {
+        hud = owner;
+        BuildPanel();
+    }
+
+    protected abstract void BuildPanel();
+
+    public abstract void Tick();
+
+    protected bool SchemeJoined(string scheme)
+    {
+        foreach (PlayerEntry entry in Match.Players)
+        {
+            if (entry.ControlScheme == scheme) return true;
+        }
+        return false;
+    }
+
+    protected void FadeIfBallBehind(GameObject panel)
+    {
+        if (!panel.activeSelf) return;
+
+        CanvasGroup group = panel.GetComponent<CanvasGroup>();
+        if (group == null) group = panel.AddComponent<CanvasGroup>();
+
+        float target = 1f;
+        if (IsAnyBallBehind((RectTransform)panel.transform)) target = hud.BehindAlpha;
+        group.alpha = Mathf.MoveTowards(group.alpha, target, Time.unscaledDeltaTime * 4f);
+    }
+
+    private bool IsAnyBallBehind(RectTransform rect)
+    {
+        Camera cam = Camera.main;
+        if (cam == null) return false;
+
+        foreach (PlayerEntry entry in Match.Players)
+        {
+            if (entry.Player == null || entry.IsRespawning) continue;
+            Vector3 screen = cam.WorldToScreenPoint(entry.Player.transform.position);
+            if (screen.z > 0f && RectTransformUtility.RectangleContainsScreenPoint(rect, screen, null)) return true;
+        }
+        return false;
     }
 }

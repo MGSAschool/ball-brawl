@@ -9,15 +9,14 @@ public class PlayerSpawner : MonoBehaviour
     [SerializeField] private float respawnDelay = 3f;
     [SerializeField] private float spawnProtection = 1.5f;
     [SerializeField] private float fallHeight = -15f;
-    [SerializeField] private ArenaSpawnRules spawnRules;
+    [SerializeField] private ArenaFloor arena;
 
     private MatchManager match;
-    private Transform[] spawnOverride;
 
     private void Awake()
     {
         match = GetComponent<MatchManager>();
-        if (spawnRules == null) spawnRules = FindAnyObjectByType<ArenaSpawnRules>();
+        if (arena == null) arena = FindAnyObjectByType<ArenaFloor>();
     }
 
     private void Update()
@@ -35,17 +34,6 @@ public class PlayerSpawner : MonoBehaviour
                 match.HandlePlayerFell(entry.Player);
             }
         }
-    }
-
-    public void SetSpawnOverride(Transform[] points)
-    {
-        if (points != null && points.Length > 0) spawnOverride = points;
-        else spawnOverride = null;
-    }
-
-    public void ClearSpawnOverride()
-    {
-        spawnOverride = null;
     }
 
     public void StartRespawn(PlayerEntry entry)
@@ -102,7 +90,7 @@ public class PlayerSpawner : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             Vector3 candidate = GetSpawnPosition(i);
-            if (spawnRules != null && !spawnRules.IsSafeToSpawn(candidate)) continue;
+            if (!IsSafeToSpawn(candidate)) continue;
             foundSafeSpot = true;
 
             float nearest = DistanceToNearestPlayer(candidate, respawning);
@@ -113,11 +101,34 @@ public class PlayerSpawner : MonoBehaviour
             }
         }
 
-        if (!foundSafeSpot && spawnRules != null && spawnRules.TryGetFallbackSpawn(out Vector3 fallback))
+        Vector3 fallback;
+        if (!foundSafeSpot && TryGetFallbackSpawn(out fallback))
         {
             return fallback;
         }
         return best;
+    }
+
+    private bool IsSafeToSpawn(Vector3 point)
+    {
+        RaycastHit hit;
+        if (!Physics.Raycast(point, Vector3.down, out hit, 6f, ~0, QueryTriggerInteraction.Ignore)) return false;
+
+        ArenaSection section = hit.collider.GetComponent<ArenaSection>();
+        return section == null || section.IsSolid;
+    }
+
+    private bool TryGetFallbackSpawn(out Vector3 position)
+    {
+        Vector3 point;
+        if (arena != null && arena.TryGetRandomSolidPoint(0f, out point))
+        {
+            position = point + Vector3.up * 1.4f;
+            return true;
+        }
+
+        position = Vector3.zero;
+        return false;
     }
 
     private float DistanceToNearestPlayer(Vector3 point, PlayerEntry ignore)
@@ -134,7 +145,6 @@ public class PlayerSpawner : MonoBehaviour
 
     private Transform[] ActivePoints()
     {
-        if (spawnOverride != null) return spawnOverride;
         return spawnPoints;
     }
 

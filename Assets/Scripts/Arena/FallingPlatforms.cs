@@ -24,22 +24,18 @@ public class FallingPlatforms : MonoBehaviour
     [SerializeField] private float minWarningDuration = 0.9f;
     [SerializeField] private int extraDownPerSpeedUp = 2;
 
-    [Header("Paced Falls")]
-    [SerializeField] private float maxPacedInterval = 4f;
+    [Header("Brawl Final Minute")]
+    [SerializeField] private float permanentFallsAt = 60f;
+    [Range(0f, 1f)]
+    [SerializeField] private float keepStandingFraction = 0.35f;
 
     private ArenaFloor floor;
     private bool running;
     private bool permanent;
-    private bool paced;
-    private bool stopped;
-    private int keepStanding;
-    private float finishAtTimeLeft;
     private float matchStartTime;
     private float nextFallTime;
     private int speedLevel;
     private bool explained;
-
-    public float FallDistance { get { return fallDistance; } }
 
     private float IntervalScale
     {
@@ -72,27 +68,6 @@ public class FallingPlatforms : MonoBehaviour
         if (match != null) match.StateChanged -= OnMatchStateChanged;
     }
 
-    public void MakeFallsPermanent()
-    {
-        permanent = true;
-        foreach (ArenaSection section in floor.Sections)
-        {
-            section.StayDown = true;
-        }
-    }
-
-    public void PaceFallsUntil(int piecesToKeep, float timeLeftWhenDone)
-    {
-        paced = true;
-        keepStanding = piecesToKeep;
-        finishAtTimeLeft = timeLeftWhenDone;
-    }
-
-    public void StopFalling()
-    {
-        stopped = true;
-    }
-
     private void OnMatchStateChanged(MatchState state)
     {
         running = state == MatchState.Playing;
@@ -114,9 +89,10 @@ public class FallingPlatforms : MonoBehaviour
         if (!running || match == null) return;
 
         CheckSpeedUp();
-        if (stopped || Time.time < nextFallTime) return;
+        CheckFinalMinute();
+        if (Time.time < nextFallTime) return;
 
-        nextFallTime = Time.time + NextInterval();
+        nextFallTime = Time.time + Random.Range(fallInterval.x, fallInterval.y) * IntervalScale;
         DropGroup();
     }
 
@@ -129,17 +105,17 @@ public class FallingPlatforms : MonoBehaviour
         if (!permanent) match.Announce("The floor is crumbling faster!");
     }
 
-    private float NextInterval()
+    private void CheckFinalMinute()
     {
-        if (!paced) return Random.Range(fallInterval.x, fallInterval.y) * IntervalScale;
+        if (permanent || match.Mode != GameMode.Brawl) return;
+        if (match.TimeRemaining > permanentFallsAt) return;
 
-        int extra = floor.CountSolid() - keepStanding;
-        if (extra <= 0) return float.PositiveInfinity;
-
-        float averageGroup = (piecesPerFall.x + piecesPerFall.y) * 0.5f;
-        int groupsLeft = Mathf.Max(1, Mathf.CeilToInt(extra / Mathf.Max(1f, averageGroup)));
-        float timeForDrops = match.TimeRemaining - finishAtTimeLeft - CurrentWarning;
-        return Mathf.Clamp(timeForDrops / groupsLeft, 0.5f, maxPacedInterval * IntervalScale);
+        permanent = true;
+        foreach (ArenaSection section in floor.Sections)
+        {
+            section.StayDown = true;
+        }
+        match.Announce("FINAL MINUTE! Fallen floor won't come back now!");
     }
 
     private void DropGroup()
@@ -154,16 +130,17 @@ public class FallingPlatforms : MonoBehaviour
         if (candidates.Count == 0) return;
 
         int count = Random.Range(piecesPerFall.x, piecesPerFall.y + 1);
-        if (!permanent)
+        if (permanent)
+        {
+            int keepStanding = Mathf.CeilToInt(floor.Sections.Count * keepStandingFraction);
+            count = Mathf.Min(count, candidates.Count - keepStanding);
+            if (count <= 0) return;
+        }
+        else
         {
             int room = maxDownAtOnce + speedLevel * extraDownPerSpeedUp - down;
             if (room < piecesPerFall.x) return;
             count = Mathf.Min(count, room);
-        }
-        if (paced)
-        {
-            count = Mathf.Min(count, candidates.Count - keepStanding);
-            if (count <= 0) return;
         }
         count = Mathf.Min(count, candidates.Count);
 
@@ -185,8 +162,6 @@ public class FallingPlatforms : MonoBehaviour
     {
         speedLevel = 0;
         permanent = false;
-        paced = false;
-        stopped = false;
         foreach (ArenaSection section in floor.Sections)
         {
             section.ResetImmediate();
