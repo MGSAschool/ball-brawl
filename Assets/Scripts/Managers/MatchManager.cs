@@ -70,6 +70,7 @@ public class MatchManager : MonoBehaviour
         }
         Instance = this;
         spawner = GetComponent<PlayerSpawner>();
+        Time.timeScale = 1f;
     }
 
     private void OnDestroy()

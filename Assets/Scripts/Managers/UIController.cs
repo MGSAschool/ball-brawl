@@ -20,6 +20,11 @@ public class UIController : MonoBehaviour
             button.onClick.AddListener(() => OnButtonPress(button.name));
         }
     }
+    public void TogglePause()
+    {
+        OnPause();
+    }
+
     void OnPause()
     {
          bool currentMatchState = 
