@@ -935,9 +935,12 @@ MonoBehaviour:
   pauseMenu: {fileID: 929172177}
   buttonArea: {fileID: 375885148}
   frameSize: {x: 600, y: 600}
-  settingsButtonSize: 90
-  settingsButtonMargin: 24
   drawOrder: 200
+  settingsButtonSize: 80
+  gapFromTimer: 16
+  timerWidth: 320
+  timerMiddleFromTop: 72
+  hudReferenceSize: {x: 1920, y: 1080}
 --- !u!1 &929172176
 GameObject:
   m_ObjectHideFlags: 0
