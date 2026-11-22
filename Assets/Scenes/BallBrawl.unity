@@ -667,11 +667,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 375885148}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.5}
-  m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 250, y: 250}
-  m_Pivot: {x: 0, y: 0.5}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 25}
+  m_SizeDelta: {x: 417, y: 235}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &717703194
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -731,14 +731,14 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_RaycastPadding: {x: 39, y: 72, z: 38, w: 73}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 838cfab68c32f92429e87b88d12d804d, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 1dcea2425e604b0da4f8c587b3f368ac, type: 3}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -769,6 +769,7 @@ GameObject:
   - component: {fileID: 776901093}
   - component: {fileID: 776901092}
   - component: {fileID: 776901091}
+  - component: {fileID: 776901094}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -919,6 +920,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb625d33f742dbf4c896da81082e2c40, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_InputReader
+--- !u!114 &776901094
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 776901086}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 342475b2966a40d0b147ad4aeb0d9776, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PauseMenuExtras
+  pauseMenu: {fileID: 929172177}
+  buttonArea: {fileID: 375885148}
+  frameSize: {x: 600, y: 600}
+  drawOrder: 200
+  settingsButtonSize: 80
+  gapFromTimer: 16
+  timerWidth: 320
+  timerMiddleFromTop: 72
+  hudReferenceSize: {x: 1920, y: 1080}
 --- !u!1 &929172176
 GameObject:
   m_ObjectHideFlags: 0
@@ -1483,11 +1505,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 375885148}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 1, y: 0.5}
-  m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 250, y: 250}
-  m_Pivot: {x: 1, y: 0.5}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -85}
+  m_SizeDelta: {x: 417, y: 235}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1396269334
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1547,14 +1569,14 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_RaycastPadding: {x: 39, y: 72, z: 38, w: 73}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: afda626b94ba8934289f75374e3fcfaf, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 087301013a8e4461b4f2bf5a9aa10dee, type: 3}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1

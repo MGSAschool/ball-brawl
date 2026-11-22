@@ -9,9 +9,10 @@ public class HUDMenuButtons : HUDPanel
     public static readonly Rect ButtonArtArea = Rect.MinMaxRect(0.094f, 0.311f, 0.906f, 0.693f);
     private static readonly Rect LogoArtArea = Rect.MinMaxRect(0.019f, 0.167f, 0.988f, 0.826f);
     private static readonly Rect WholeArt = Rect.MinMaxRect(0f, 0f, 1f, 1f);
-    private static readonly Rect GuideSpot = Rect.MinMaxRect(0f, 0.08f, 0.125f, 1.05f);
-    private static readonly Rect PlaySpot = Rect.MinMaxRect(0.158f, 0f, 0.526f, 1f);
-    private static readonly Rect QuitSpot = Rect.MinMaxRect(0.553f, 0.1f, 0.842f, 0.9f);
+    private static readonly Rect GuideArtArea = Rect.MinMaxRect(0.092f, 0.108f, 0.957f, 0.928f);
+    private const float PlayHeight = 96f;
+    private const float SideButtonHeight = 72f;
+    private const float ButtonGap = 28f;
 
     private GameObject logo;
     private GameObject menu;
@@ -24,7 +25,7 @@ public class HUDMenuButtons : HUDPanel
         menu = UIKit.NewRect("Menu", Root).gameObject;
         RectTransform menuRect = (RectTransform)menu.transform;
         Vector2 bottomCenter = new Vector2(0.5f, 0f);
-        UIKit.PlaceAt(menuRect, bottomCenter, new Vector2(0f, 165f), new Vector2(760f, 100f));
+        UIKit.PlaceAt(menuRect, bottomCenter, new Vector2(0f, 165f), new Vector2(1000f, 110f));
 
         Sprite guideSprite = null;
         Sprite playSprite = null;
@@ -36,13 +37,31 @@ public class HUDMenuButtons : HUDPanel
             leaveSprite = Art.leaveButton;
         }
 
-        MakeButton("How To Play", guideSprite, WholeArt, GuideSpot, hud.ToggleGuide);
-        TextMeshProUGUI guideLabel = UIKit.NewAutoText(menu.transform, "Guide Label", 10f, 18f, TextAlignmentOptions.Center, 0f);
-        UIKit.Stretch(guideLabel.rectTransform, Rect.MinMaxRect(GuideSpot.xMin - 0.03f, -0.12f, GuideSpot.xMax + 0.03f, 0.08f));
-        guideLabel.text = "GUIDE <size=80%>(H)";
+        float playWidth = ArtWidth(playSprite, ButtonArtArea, PlayHeight);
+        float guideWidth = ArtWidth(guideSprite, GuideArtArea, SideButtonHeight);
+        float quitWidth = ArtWidth(leaveSprite, ButtonArtArea, SideButtonHeight);
 
-        playImage = MakeButton("Play", playSprite, ButtonArtArea, PlaySpot, OnPlayClicked);
-        MakeButton("Quit", leaveSprite, ButtonArtArea, QuitSpot, MenuInput.QuitGame);
+        float guideX = -(playWidth * 0.5f + ButtonGap + guideWidth * 0.5f);
+        float quitX = playWidth * 0.5f + ButtonGap + quitWidth * 0.5f;
+
+        playImage = MakeButton("Play", playSprite, ButtonArtArea, 0f, playWidth, PlayHeight, OnPlayClicked);
+        MakeButton("How To Play", guideSprite, GuideArtArea, guideX, guideWidth, SideButtonHeight, hud.ToggleGuide);
+        MakeButton("Quit", leaveSprite, ButtonArtArea, quitX, quitWidth, SideButtonHeight, MenuInput.QuitGame);
+
+        TextMeshProUGUI guideLabel = UIKit.NewAutoText(menu.transform, "Guide Label", 10f, 18f, TextAlignmentOptions.Center, 0f);
+        Vector2 middle = new Vector2(0.5f, 0.5f);
+        Vector2 labelPosition = new Vector2(guideX, -(SideButtonHeight * 0.5f + 12f));
+        UIKit.PlaceAt(guideLabel.rectTransform, middle, labelPosition, new Vector2(guideWidth + 60f, 22f));
+        guideLabel.text = "GUIDE <size=80%>(H)";
+    }
+
+    private float ArtWidth(Sprite sprite, Rect artArea, float height)
+    {
+        if (sprite == null) return height * 3f;
+
+        float visibleWidth = sprite.rect.width * artArea.width;
+        float visibleHeight = sprite.rect.height * artArea.height;
+        return height * visibleWidth / visibleHeight;
     }
 
     public override void Tick()
@@ -92,10 +111,10 @@ public class HUDMenuButtons : HUDPanel
         }
     }
 
-    private Image MakeButton(string name, Sprite sprite, Rect artArea, Rect anchors, UnityAction onClick)
+    private Image MakeButton(string name, Sprite sprite, Rect artArea, float centerX, float width, float height, UnityAction onClick)
     {
         RectTransform root = UIKit.NewRect(name, menu.transform);
-        UIKit.Stretch(root, anchors);
+        UIKit.PlaceAt(root, new Vector2(0.5f, 0.5f), new Vector2(centerX, 0f), new Vector2(width, height));
 
         Image clickArea = UIKit.NewImage("Button", root);
         clickArea.raycastTarget = true;

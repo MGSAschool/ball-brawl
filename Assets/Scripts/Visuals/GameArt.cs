@@ -39,6 +39,10 @@ public class GameArt : ScriptableObject
     public Sprite leaveButton;
     public Sprite modeLabel;
 
+    [Header("Pause Menu")]
+    public Sprite pauseFrame;
+    public Sprite settingsButton;
+
     private static GameArt instance;
 
     public static GameArt Instance

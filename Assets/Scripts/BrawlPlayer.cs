@@ -13,6 +13,11 @@ public class BrawlPlayer : MonoBehaviour, IKnockable
     public float jumpHeight = 1.2f;
     public float groundCheckDistance = 0.15f;
 
+    [Header("Acceleration")]
+    [Range(0f, 1f)] public float startSpeedPercent = 0.4f;
+    public float timeToTopSpeed = 0.8f;
+    [Range(0f, 1f)] public float turnSlowdown = 0.5f;
+
     [Header("Combat")]
     public float baseHitForce = 12f;
     public float knockbackStunDuration = 0.35f;
@@ -39,6 +44,8 @@ public class BrawlPlayer : MonoBehaviour, IKnockable
     private float superKnockbackMultiplier = 1f;
     private float speedBoostUntil;
     private float speedBoostMultiplier = 1f;
+    private float speedBuildUp;
+    private Vector2 lastMoveDirection;
 
     private bool IsKnockedBack => Time.time < knockedBackUntil;
     private float CurrentMoveSpeed => moveSpeed * (HasSpeedBoost ? speedBoostMultiplier : 1f);
@@ -76,10 +83,35 @@ public class BrawlPlayer : MonoBehaviour, IKnockable
 
         if (inputDirection.sqrMagnitude > 0.01f)
         {
-            Vector3 moveTarget = new Vector3(inputDirection.x, 0f, inputDirection.y) * CurrentMoveSpeed;
+            UpdateSpeedBuildUp();
+            float speed = CurrentMoveSpeed * Mathf.Lerp(startSpeedPercent, 1f, speedBuildUp);
+            Vector3 moveTarget = new Vector3(inputDirection.x, 0f, inputDirection.y) * speed;
             moveTarget.y = rb.linearVelocity.y;
             rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, moveTarget, 0.25f);
         }
+        else
+        {
+            speedBuildUp = 0f;
+            lastMoveDirection = Vector2.zero;
+        }
+    }
+
+    private void UpdateSpeedBuildUp()
+    {
+        bool justStarted = lastMoveDirection.sqrMagnitude < 0.01f;
+        if (justStarted)
+        {
+            Vector3 flatVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+            float startSpeed = CurrentMoveSpeed * startSpeedPercent;
+            speedBuildUp = Mathf.InverseLerp(startSpeed, CurrentMoveSpeed, flatVelocity.magnitude);
+        }
+        else if (Vector2.Angle(lastMoveDirection, inputDirection) > 90f)
+        {
+            speedBuildUp *= turnSlowdown;
+        }
+
+        speedBuildUp = Mathf.MoveTowards(speedBuildUp, 1f, Time.fixedDeltaTime / Mathf.Max(0.01f, timeToTopSpeed));
+        lastMoveDirection = inputDirection;
     }
 
     // --- Power-up effects (triggered by PlayerInventory) ---
@@ -130,6 +162,8 @@ public class BrawlPlayer : MonoBehaviour, IKnockable
         dashUntil = 0f;
         nextDashTime = 0f;
         knockedBackUntil = 0f;
+        speedBuildUp = 0f;
+        lastMoveDirection = Vector2.zero;
         ClearLastAttacker();
         if (!rb.isKinematic)
         {

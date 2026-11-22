@@ -37,3 +37,5 @@ MonoBehaviour:
   howToPlayButton: {fileID: 21300000, guid: 1875745850c427848ad627d8ccb85853, type: 3}
   leaveButton: {fileID: 21300000, guid: 087301013a8e4461b4f2bf5a9aa10dee, type: 3}
   modeLabel: {fileID: 21300000, guid: c679e862ad2649aab48e2cb7f3c1a0e0, type: 3}
+  pauseFrame: {fileID: 21300000, guid: 0c5b63186f1cfc642afb64b91eedc582, type: 3}
+  settingsButton: {fileID: 21300000, guid: 80d71ab30685cb348a0179a1b8c50d06, type: 3}

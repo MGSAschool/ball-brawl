@@ -29,6 +29,12 @@ public class UIController : MonoBehaviour
             button.onClick.RemoveAllListeners();
         }
     }
+
+    public void TogglePause()
+    {
+        OnPause();
+    }
+
     void OnPause()
     {
          bool currentMatchState = 
