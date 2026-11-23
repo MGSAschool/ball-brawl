@@ -10,8 +10,10 @@ public class HUDMenuButtons : HUDPanel
     private static readonly Rect LogoArtArea = Rect.MinMaxRect(0.019f, 0.167f, 0.988f, 0.826f);
     private static readonly Rect WholeArt = Rect.MinMaxRect(0f, 0f, 1f, 1f);
     private static readonly Rect GuideArtArea = Rect.MinMaxRect(0.092f, 0.108f, 0.957f, 0.928f);
-    private const float PlayHeight = 96f;
-    private const float SideButtonHeight = 72f;
+    private static readonly Rect MenuIconArtArea = Rect.MinMaxRect(0.195f, 0.163f, 0.831f, 0.805f);
+    private const float PlayHeight = 110f;
+    private const float QuitHeight = 84f;
+    private const float GuideHeight = 72f;
     private const float ButtonGap = 28f;
 
     private GameObject logo;
@@ -37,20 +39,20 @@ public class HUDMenuButtons : HUDPanel
             leaveSprite = Art.leaveButton;
         }
 
-        float playWidth = ArtWidth(playSprite, ButtonArtArea, PlayHeight);
-        float guideWidth = ArtWidth(guideSprite, GuideArtArea, SideButtonHeight);
-        float quitWidth = ArtWidth(leaveSprite, ButtonArtArea, SideButtonHeight);
+        float playWidth = ArtWidth(playSprite, MenuIconArtArea, PlayHeight);
+        float guideWidth = ArtWidth(guideSprite, GuideArtArea, GuideHeight);
+        float quitWidth = ArtWidth(leaveSprite, MenuIconArtArea, QuitHeight);
 
         float guideX = -(playWidth * 0.5f + ButtonGap + guideWidth * 0.5f);
         float quitX = playWidth * 0.5f + ButtonGap + quitWidth * 0.5f;
 
-        playImage = MakeButton("Play", playSprite, ButtonArtArea, 0f, playWidth, PlayHeight, OnPlayClicked);
-        MakeButton("How To Play", guideSprite, GuideArtArea, guideX, guideWidth, SideButtonHeight, hud.ToggleGuide);
-        MakeButton("Quit", leaveSprite, ButtonArtArea, quitX, quitWidth, SideButtonHeight, MenuInput.QuitGame);
+        playImage = MakeButton("Play", playSprite, MenuIconArtArea, 0f, playWidth, PlayHeight, OnPlayClicked);
+        MakeButton("How To Play", guideSprite, GuideArtArea, guideX, guideWidth, GuideHeight, hud.ToggleGuide);
+        MakeButton("Quit", leaveSprite, MenuIconArtArea, quitX, quitWidth, QuitHeight, MenuInput.QuitGame);
 
         TextMeshProUGUI guideLabel = UIKit.NewAutoText(menu.transform, "Guide Label", 10f, 18f, TextAlignmentOptions.Center, 0f);
         Vector2 middle = new Vector2(0.5f, 0.5f);
-        Vector2 labelPosition = new Vector2(guideX, -(SideButtonHeight * 0.5f + 12f));
+        Vector2 labelPosition = new Vector2(guideX, -(GuideHeight * 0.5f + 12f));
         UIKit.PlaceAt(guideLabel.rectTransform, middle, labelPosition, new Vector2(guideWidth + 60f, 22f));
         guideLabel.text = "GUIDE <size=80%>(H)";
     }
