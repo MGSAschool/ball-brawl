@@ -130,6 +130,7 @@ public class PlayerJoiner : MonoBehaviour
             Destroy(input.gameObject);
             return false;
         }
+        if (input.GetComponent<BallPhysics>() == null) input.gameObject.AddComponent<BallPhysics>();
 
         PlayerEntry entry = new PlayerEntry();
         entry.Player = player;
