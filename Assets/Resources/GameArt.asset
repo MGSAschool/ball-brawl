@@ -33,9 +33,9 @@ MonoBehaviour:
   namePlate: {fileID: 3204213594579170988, guid: 6dad0bc9debaddc4fb24c89a71273025, type: 3}
   pointsIcon: {fileID: -6454717568534380362, guid: fc8ce868422aa1d4c801ba234f9334d4, type: 3}
   coinIcon: {fileID: 21300000, guid: 629a59487add3b1409400991d524dbf8, type: 3}
-  playButton: {fileID: 21300000, guid: 1dcea2425e604b0da4f8c587b3f368ac, type: 3}
+  playButton: {fileID: 21300000, guid: 838cfab68c32f92429e87b88d12d804d, type: 3}
   howToPlayButton: {fileID: 21300000, guid: 1875745850c427848ad627d8ccb85853, type: 3}
-  leaveButton: {fileID: 21300000, guid: 087301013a8e4461b4f2bf5a9aa10dee, type: 3}
+  leaveButton: {fileID: 21300000, guid: afda626b94ba8934289f75374e3fcfaf, type: 3}
   modeLabel: {fileID: 21300000, guid: c679e862ad2649aab48e2cb7f3c1a0e0, type: 3}
   pauseFrame: {fileID: 21300000, guid: 0c5b63186f1cfc642afb64b91eedc582, type: 3}
   settingsButton: {fileID: 21300000, guid: 80d71ab30685cb348a0179a1b8c50d06, type: 3}
